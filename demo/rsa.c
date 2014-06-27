@@ -251,7 +251,7 @@ int test(void)
 }
 
 int main(void){
-        test();
+        fasttest();
 }
 /* $Source: /cvs/libtom/tomsfastmath/demo/rsa.c,v $ */
 /* $Revision: 1.2 $ */
