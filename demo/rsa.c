@@ -70,8 +70,8 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
                 }
                 gather(table,y,&temp,width);
                 fp_mul(res, &temp, res );
-                fp_montgomery_reduce(res,m, mp);
-        }
+                fp_montgomery_reduce(res,m, mp); 
+       }
         fp_montgomery_reduce(res,m,mp);
         return 0;
 }
@@ -183,7 +183,8 @@ int test(void)
    printf("CLOCKS_PER_SEC = %llu\n", (unsigned long long)CLOCKS_PER_SEC);
    t1 = clock();
    for (x = 0; x < 1000; x++) {
-      fp_exptmod(&m, &e, &n, &e_m);
+           //fp_exptmod(&m, &e, &n, &e_m);
+           table_sc_exp(&m, &e, &n, &e_m);
    }
    t1 = clock() - t1;
    printf("1000 RSA operations took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
