@@ -1,6 +1,6 @@
 #include "tfm.h"
 #include <time.h>
-#define TABLE 8
+#define TABLE 4
 
 int fp_print(fp_int *test){
         char buf[128];
@@ -8,6 +8,60 @@ int fp_print(fp_int *test){
         printf("%s\n",buf);
         return 0;
 }
+//WE need a compile time assert for byte-width
+int table_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
+        fp_int table[1<<TABLE];   
+        fp_int temp,tempb, tempc;
+        fp_digit buf,mp,y;
+        int i,digidx,err, bitcnt;
+        if ((err = fp_montgomery_setup (m, &mp)) != FP_OKAY) {
+                return err;
+        }
+        /* now we need R mod m */
+        fp_montgomery_calc_normalization (&temp, m); //Set used to 16 everywhere!
+        /* now set R[0][1] to G * R mod m */
+        fp_mod(a, m, &tempb);
+        fp_mulmod (&tempb, &temp, m, &tempb); 
+        //Table[0] = Mont(1) = temp
+        //Table[1] = Mont(a) = tempb
+        fp_init_copy(&table[0], &temp);
+        fp_init_copy(&table[1], &tempb);
+        fp_init_copy(&tempc, &tempb);
+        for(i=2;i<(1<<TABLE); i++){
+                fp_mul(&tempb,&tempc,&temp);
+                fp_montgomery_reduce(&temp, m, mp);
+                fp_init_copy(&tempb,&temp);
+                fp_init_copy(&table[i], &temp);
+        }
+        digidx= b->used-1;
+        buf=b->dp[digidx--];
+        bitcnt = (int)DIGIT_BIT;
+
+        y = (buf >> (DIGIT_BIT-TABLE)) & ((1<<TABLE) -1);
+        buf<<=(fp_digit)TABLE;
+        fp_init_copy(res,&table[y]);
+        for(;;){
+                bitcnt -= TABLE;
+                if(bitcnt==0 ){
+                        if(digidx == -1){
+                                break;
+                        }
+                        buf = b->dp[digidx--];
+                        bitcnt = (int) DIGIT_BIT;
+                }  
+                y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
+                buf <<= (fp_digit)TABLE;
+                for(i=0;i<TABLE;i++){
+                        fp_sqr(res,res);                  
+                        fp_montgomery_reduce(res,m, mp);
+                }
+                fp_mul(res, &table[(int)y], res );
+                fp_montgomery_reduce(res,m, mp);
+        }
+        fp_montgomery_reduce(res,m,mp);
+        return 0;
+}
+#if 0
 int table_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
         fp_int table[1<<TABLE];   
         fp_digit buf,mp,y;
@@ -54,6 +108,7 @@ int table_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
         fp_montgomery_reduce(res,m,mp);
         return 0;
 }
+#endif
 int main(void)
 {
    fp_int d, e, n, c, m, e_m;
