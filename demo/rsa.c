@@ -1,5 +1,6 @@
 #include "tfm.h"
 #include <time.h>
+#include <openssl/bn.h>
 #define TABLE 4
 
 int fp_print(fp_int *test){
@@ -140,15 +141,46 @@ int fasttest(void){
    printf("1000 sctable operations took      %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
    printf("RSA (sctable) decrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 1000.0) );
 }
+int mult_bench(void){
+
+        char a[]= "ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9""ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9";
+        char b[] =  "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd""39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd";
+        int i;
+        fp_int fp_a, fp_b,fp_c;
+        BIGNUM *bn_a,*bn_b,*bn_c;
+        BN_CTX *ctx;
+        clock_t t1;
+        BN_hex2bn(&bn_a,a);
+        BN_hex2bn(&bn_b,b);
+        fp_read_radix(&fp_a,a,16);
+        fp_read_radix(&fp_b,b,16);
+        bn_c = BN_new();
+        ctx  = BN_CTX_new();
+        t1 = clock();
+        for(i=0;i<10000;i++){
+                BN_mul(bn_c,bn_a,bn_b,ctx);
+        }
+        t1 = clock() - t1;
+        printf("10000 SSL multiplications took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
+
+        t1 = clock();
+        for(i=0;i<10000;i++){
+                fp_mul(&fp_a,&fp_b,&fp_c);
+        }
+        t1 = clock() - t1;
+        printf("10000 TFM multiplications took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
+        return;
+ }
 int test(void)
 {
    fp_int d, e, n, c, m, e_m;
    clock_t t1;
    int x;
+   mult_bench();
    puts(fp_ident());
 #if 0
    /* read in the parameters */
-   fp_read_radix(&n, "ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9", 16);
+   fp_read_radix(&n,"ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9" , 16);
    fp_read_radix(&e, "10001", 16);
    fp_read_radix(&m, "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd", 16);
    fp_read_radix(&c, "9ff70ea6968a04530e6b06bf01aa937209cc8450e76ac19477743de996ba3fb445923c947f8d0add8c57efa51d15485309918459da6c1e5a97f215193b797dce98db51bdb4639c2ecfa90ebb051e3a2daeffd27a7d6e62043703a7b15e0ada5170427b63099cd01ef52cd92d8723e5774bea32716aaa7f5adbae817fb12a5b50", 16);
@@ -252,7 +284,7 @@ int test(void)
 }
 
 int main(void){
-        fasttest();
+        test();
 }
 /* $Source: /cvs/libtom/tomsfastmath/demo/rsa.c,v $ */
 /* $Revision: 1.2 $ */
