@@ -186,7 +186,7 @@ int mult_bench(void){
         }
         t1 = clock() - t1;
         printf("10000 TFM multiplications took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-        return;
+        return 0;
  }
 int test(void)
 {

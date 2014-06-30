@@ -1,4 +1,6 @@
-CFLAGS=-I ../src/headers -ggdb
-rsa: rsa.c ../libtfm.a -lcrypto
+CXXFLAGS=-I ../src/headers -ggdb  -Wno-write-strings
+
+ACCESSORY=../src/bin/*.c ../src/bit/*.c ../src/addsub/fp_cmp* ../src/mul/fp_mul_d.c
+rsa: rsa.cc $(ACCESSORY) -lcrypto
 clean: 
 	rm rsa
