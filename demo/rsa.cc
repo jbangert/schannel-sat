@@ -1,8 +1,9 @@
 #include "tfm.h"
 #include <time.h>
 #include <openssl/bn.h>
+#include <cassert>
 #define TABLE 4
-
+#include "tfm.cc"
 int fp_print(fp_int *test){
         char buf[128];
         fp_toradix(test,buf,10);
@@ -21,14 +22,16 @@ static void gather(fp_digit table[], int choice, fp_int *foo, int width){
         foo->used = width;
         foo->sign = 0;
 }
-//WE need a compile time assert for byte-width
+//TODO:  template for width
+template <int used>
 int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
         fp_digit table[FP_SIZE * (1<<TABLE)];   
         fp_int temp, temp1;
         fp_digit buf,mp,y;
         int i,digidx,err, bitcnt;
-        int width = a->used;
+        int width = m->used;
         int montgomery = 0;
+        assert(used == m->used);
         if ((err = fp_montgomery_setup (m, &mp)) != FP_OKAY) {
                 return err;
         }
@@ -67,9 +70,10 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
                 y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
                 buf <<= (fp_digit)TABLE;
                 for(i=0;i<TABLE;i++){
-                        fp_sqr(res,res);                  
-                        montgomery++;
-                        fp_montgomery_reduce(res,m, mp);
+                  fp_sqr_comba_small16(res,res);            
+                  montgomery++;
+                  fp_montgomery_reduce(res,m, mp);
+                  assert(res->used == 16);
                 }
                 gather(table,y,&temp,width);
                 fp_mul(res, &temp, res );
@@ -81,8 +85,8 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
 }
 int rsa_crt(fp_int *c, fp_int *p, fp_int *q, fp_int *d_p, fp_int *d_q, fp_int *q_inv, fp_int *m){
         fp_int m1,m2;
-        table_sc_exp(c,d_p,p,&m1);
-        table_sc_exp(c,d_q,q,&m2);
+        table_sc_exp<16>(c,d_p,p,&m1);
+        table_sc_exp<16>(c,d_q,q,&m2);
         fp_sub(&m1,&m2,&m1);
         fp_mulmod(q_inv,&m1,p,&m1);
         fp_mul(q,&m1,&m1);
@@ -104,15 +108,15 @@ int crt_test(void ){
         fp_read_radix(&d, "16ce103ddd354bde68ccb8092498931c047599e17e26c7832530eecf0ddebbe315ed4ec02d8a0aecd29afc52f36f9824c561277c5d1cf1e6f8bde403ad70e3bc2cb2d9ad7405c268c01fe4afc853fc00eeca585cf936945f1f65e8826ab4b1e7585b8cd19213a34de74e57babbecd9d937e98a663f57ef9ca94ef4f0a88e12c33afef03fff8dc98016beaddb4f5dde468c6ffae25e4137896ff9e81f4c783f8691dad676bd1786db4a911674a3e4b77950264aa69182cb20383f9fd1bd91c2f4a50a7b48c42b3c0a9c3d9e267e5c28e8752546ebb08837828d220eb8d2433f0732f28e6b0fe68de916a8a43eede93b5356773c272fc443d1469b3c768bc1cf61",16);
         fp_read_radix(&n, "00f097f1fc44b461bd4435717cf9f8bc1c0162ac0ed64e5e5e7bccbbeb6c35cf9c82923e34ed22789e25937d5c230d2b888d596151c95388d0cc9ad16a0db48cfbe595c65156584a7281434a0034e79df4e7e73d20de5a904e9ec91a8d91307d1dedfc9637abd0bf47d05ee8cd36e017fcc695713ce60b7ef401235e7051b5a0c8510c6613e4aa388a7c4a4059abfe800e35e0b5ab05d898f3ff8aa510048406aea7a9f7ca4a5b1baacc206cb3ec7c07f9950ba0568023a20617c9ab0c941040a28d4c1cc3dc9d97323b4632cd185c5c5df83ad02db2fd8770d476ba2584e9aa0b87f8d345804d3dd128947300d2fd0084050ccb1c4c13e56feb42241b309fa08b",16 );
 
-        table_sc_exp(&c, &d, &n, &e_m);
-        if (fp_cmp(&e_m, &m)) {
-                char buf[1024];
-                printf("Encrypted text not equal\n");
-                fp_toradix(&e_m, buf, 16);
-                printf("e_m == %s\n", buf);
-                exit(-1);
+        // //   table_sc_exp(&c, &d, &n, &e_m);
+        // if (fp_cmp(&e_m, &m)) {
+        //         char buf[1024];
+        //         printf("Encrypted text not equal\n");
+        //         fp_toradix(&e_m, buf, 16);
+        //         printf("e_m == %s\n", buf);
+        //         exit(-1);
                 
-        }
+        // }
         rsa_crt(&c,&p,&q,&d_p,&d_q,&q_inv,&e_m);
         if (fp_cmp(&e_m, &m)) {
                 char buf[1024];
@@ -126,12 +130,6 @@ int crt_test(void ){
         const int count = 1000;
         t1 = clock();
         for (x = 0; x < count; x++) {
-                table_sc_exp(&c, &d, &n, &e_m);
-        }
-        t1 = clock() - t1;
-        printf("%d full-size SCTable RSa took     %10.5g seconds\n",count, (double)t1 / (double)CLOCKS_PER_SEC);
-        t1 = clock();
-        for (x = 0; x < count; x++) {
                 rsa_crt(&c,&p,&q,&d_p,&d_q,&q_inv,&e_m);
         }
         t1 = clock() - t1;
@@ -139,146 +137,9 @@ int crt_test(void ){
         
         printf("CRT decrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 /(double)count) );
 }
-int fasttest(void){
-
-   fp_int d, e, n, c, m, e_m;
-   /* read in the parameters */
-   fp_read_radix(&n, "a7f30e2e04d31acc6936916af1e404a4007adfb9e97864de28d1c7ba3034633bee2cd9d5da3ea3cdcdc9a6f3daf5702ef750f4c3aadb0e27410ac04532176795995148cdb4691bd09a8a846e3e24e073ce2f89b34dfeb2ee89b646923ca60ee3f73c4d5397478380425e7260f75dfdc54826e160395b0889b1162cf115a9773f", 16);
-   fp_read_radix(&d, "16d166f3c9a404d810d3611e6e8ed43293fe1db75c8906eb4810785a4b82529929dade1db7f11ac0335d5a59773e3167b022479eedefa514a0399db5c900750a56323cf9f5b0f21e7d60a46d75f3fcaabf30a63cbe34048b741a57ac36a13914afda798709dea5771f8d456cf72ec5f3afc1d88d023de40311143a36e7028739", 16);
-   fp_read_radix(&c, "7d216641c32543f5b8428bdd0b11d819cfbdb16f1df285247f677aa4d44de62ab064f4a0d060ec99cb94aa398113a4317f2c550d0371140b0fd2c88886cac771812e72faad4b7adf495b9b850b142ccd7f45c0a27f164c8c7731731c0015f69d0241812e769d961054618aeb9e8e8989dba95714a2cf56c9e525c5e34b5812dd", 16);
-   fp_read_radix(&m, "5f323bf0b394b98ffd78727dc9883bb4f42287def6b60fa2a964b2510bc55d61357bf5a6883d2982b268810f8fef116d3ae68ebb41fd10d65a0af4bec0530eb369f37c14b55c3be60223b582372fb6589b648d5a0c7252d1ae2dae5809785d993e9e5d0c4d9b0bcba0cde0d6671734747fba5483c735e1dab7df7b10ec6f62d8", 16);
-
-   clock_t t1;
-   int x;
-   t1 = clock();
-   for (x = 0; x < 1000; x++) {
-      table_sc_exp(&c, &d, &n, &e_m);
-   }
-   t1 = clock() - t1;
-   printf("1000 sctable operations took      %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-   printf("RSA (sctable) decrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 1000.0) );
-}
-int mult_bench(void){
-
-        char a[]= "ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9""ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9";
-        char b[] =  "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd""39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd";
-        int i;
-        fp_int fp_a, fp_b,fp_c;
-        BIGNUM *bn_a,*bn_b,*bn_c;
-        BN_CTX *ctx;
-        clock_t t1;
-        BN_hex2bn(&bn_a,a);
-        BN_hex2bn(&bn_b,b);
-        fp_read_radix(&fp_a,a,16);
-        fp_read_radix(&fp_b,b,16);
-        bn_c = BN_new();
-        ctx  = BN_CTX_new();
-        t1 = clock();
-        for(i=0;i<100000;i++){
-                BN_mul(bn_c,bn_a,bn_b,ctx);
-        }
-        t1 = clock() - t1;
-        printf("10000 SSL multiplications took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-
-        t1 = clock();
-        for(i=0;i<100000;i++){
-                fp_mul(&fp_a,&fp_b,&fp_c);
-        }
-        t1 = clock() - t1;
-        printf("10000 TFM multiplications took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-        return 0;
- }
-int test(void)
-{
-   fp_int d, e, n, c, m, e_m;
-   clock_t t1;
-   int x;
-   mult_bench();
-   puts(fp_ident());
-   /* read in the parameters */
-   fp_read_radix(&n,"ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9" , 16);
-   fp_read_radix(&e, "10001", 16);
-   fp_read_radix(&m, "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd", 16);
-   fp_read_radix(&c, "9ff70ea6968a04530e6b06bf01aa937209cc8450e76ac19477743de996ba3fb445923c947f8d0add8c57efa51d15485309918459da6c1e5a97f215193b797dce98db51bdb4639c2ecfa90ebb051e3a2daeffd27a7d6e62043703a7b15e0ada5170427b63099cd01ef52cd92d8723e5774bea32716aaa7f5adbae817fb12a5b50", 16);
-
-
-   /* test it */
-   table_sc_exp(&m, &e, &n, &e_m);
-   if (fp_cmp(&e_m, &c)) {
-      char buf[1024];
-      printf("Encrypted text not equal\n");
-      fp_toradix(&e_m, buf, 16);
-      printf("e_m == %s\n", buf);
-      return 0;
-   
-   }
-   crt_test();
-
-   printf("CLOCKS_PER_SEC = %llu\n", (unsigned long long)CLOCKS_PER_SEC);
-   t1 = clock();
-   for (x = 0; x < 1000; x++) {
-           fp_exptmod(&m, &e, &n, &e_m);
-//           table_sc_exp(&m, &e, &n, &e_m);
-   }
-   t1 = clock() - t1;
-   printf("1000 RSA operations took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-   printf("RSA encrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 1000.0) );
-
-   /* read in the parameters */
-   fp_read_radix(&n, "a7f30e2e04d31acc6936916af1e404a4007adfb9e97864de28d1c7ba3034633bee2cd9d5da3ea3cdcdc9a6f3daf5702ef750f4c3aadb0e27410ac04532176795995148cdb4691bd09a8a846e3e24e073ce2f89b34dfeb2ee89b646923ca60ee3f73c4d5397478380425e7260f75dfdc54826e160395b0889b1162cf115a9773f", 16);
-   fp_read_radix(&d, "16d166f3c9a404d810d3611e6e8ed43293fe1db75c8906eb4810785a4b82529929dade1db7f11ac0335d5a59773e3167b022479eedefa514a0399db5c900750a56323cf9f5b0f21e7d60a46d75f3fcaabf30a63cbe34048b741a57ac36a13914afda798709dea5771f8d456cf72ec5f3afc1d88d023de40311143a36e7028739", 16);
-   fp_read_radix(&c, "7d216641c32543f5b8428bdd0b11d819cfbdb16f1df285247f677aa4d44de62ab064f4a0d060ec99cb94aa398113a4317f2c550d0371140b0fd2c88886cac771812e72faad4b7adf495b9b850b142ccd7f45c0a27f164c8c7731731c0015f69d0241812e769d961054618aeb9e8e8989dba95714a2cf56c9e525c5e34b5812dd", 16);
-   fp_read_radix(&m, "5f323bf0b394b98ffd78727dc9883bb4f42287def6b60fa2a964b2510bc55d61357bf5a6883d2982b268810f8fef116d3ae68ebb41fd10d65a0af4bec0530eb369f37c14b55c3be60223b582372fb6589b648d5a0c7252d1ae2dae5809785d993e9e5d0c4d9b0bcba0cde0d6671734747fba5483c735e1dab7df7b10ec6f62d8", 16);
-
-   /* test it */
-   fp_exptmod(&c, &d, &n, &e_m);
-   if (fp_cmp(&e_m, &m)) {
-      char buf[1024];
-      printf("Decrypted text not equal\n");
-      fp_toradix(&e_m, buf, 16);
-      printf("e_m == %s\n", buf);
-      return 0;
-   }
-
-   t1 = clock();
-   for (x = 0; x < 100; x++) {
-      fp_exptmod(&c, &d, &n, &e_m);
-   }
-   t1 = clock() - t1;
-   printf("100 RSA operations took      %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-   printf("RSA decrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 100.0) );
-
-   t1 = clock();
-   for (x = 0; x < 100; x++) {
-      table_sc_exp(&c, &d, &n, &e_m);
-   }
-   t1 = clock() - t1;
-   printf("100 sctable operations took      %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-   printf("RSA (sctable) decrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 100.0) );
-
-   /* test half size */
-   fp_rshd(&n, n.used >> 1);
-   fp_rshd(&d, d.used >> 1);
-   fp_rshd(&c, c.used >> 1);
-   printf("n.used == %4d bits\n", n.used * DIGIT_BIT);
-
-   /* ensure n is odd */
-   n.dp[0] |= 1;
-   t1 = clock();
-   for (x = 0; x < 100; x++) {
-      fp_exptmod(&c, &d, &n, &e_m);
-   }
-   t1 = clock() - t1;
-   printf("100 RSA-half operations took %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-   printf("RSA decrypt/sec              %10.5g (estimate of RSA-1024-CRT) \n", (double)CLOCKS_PER_SEC / ((double)t1 / 50.0) );
-
-
-
-   return 0;
-}
 
 int main(void){
-        test();
+        crt_test();
 }
 /* $Source: /cvs/libtom/tomsfastmath/demo/rsa.c,v $ */
 /* $Revision: 1.2 $ */
