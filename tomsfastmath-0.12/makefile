@@ -3,7 +3,7 @@
 #
 VERSION=0.12
 
-CFLAGS += -Wall -W -Wshadow -Isrc/headers
+CFLAGS += -Wall -W -Wshadow -Isrc/headers 
 
 ifndef MAKE
    MAKE=make
@@ -11,7 +11,7 @@ endif
 
 ifndef IGNORE_SPEED
 
-CFLAGS += -O3 -funroll-loops
+CFLAGS += -O4 -funroll-loops
 
 #profiling
 #PROF=-pg -g
