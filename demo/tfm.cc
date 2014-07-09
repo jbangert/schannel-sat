@@ -475,13 +475,13 @@ int fp_mod(fp_int *a, fp_int *b, fp_int *c)
   }
   return FP_OKAY;
 }
-int fp_mulmod(fp_int *a, fp_int *b, fp_int *c, fp_int *d)
-{
-  fp_int tmp;
-  fp_zero(&tmp);
-  fp_mul(a, b, &tmp);
-  return fp_mod(&tmp, c, d);
-}
+// int fp_mulmod(fp_int *a, fp_int *b, fp_int *c, fp_int *d)
+// {
+//   fp_int tmp;
+//   fp_zero(&tmp);
+//   fp_mul(a, b, &tmp);
+//   return fp_mod(&tmp, c, d);
+// }
 
 
 /* computes a = B**n mod b without division or multiplication useful for
@@ -553,9 +553,7 @@ int fp_montgomery_setup(fp_int *a, fp_digit *rho)
 #include "tfm_sqr.cc"
 #include "tfm_mont.cc"
 
-void fp_mul(fp_int *A, fp_int *B, fp_int *C){
-        fp_mul_comba(A,B,C);
-}
+
 /* $Source: /cvs/libtom/tomsfastmath/src/mont/fp_montgomery_setup.c,v $ */
 /* $Revision: 1.1 $ */
 /* $Date: 2006/12/31 21:25:53 $ */

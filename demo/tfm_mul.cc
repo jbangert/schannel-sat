@@ -13,12 +13,11 @@
 */
 
 #include <tfm.h>
-
+#define TFM_DEFINES
 #if defined(TFM_PRESCOTT) && defined(TFM_SSE2)
    #undef TFM_SSE2
    #define TFM_X86
 #endif
-
 /* these are the combas.  Worship them. */
 #if defined(TFM_X86)
 /* Generic x86 optimized code */
@@ -303,61 +302,4 @@ asm(                              \
 
 #endif
 
-#ifndef TFM_DEFINES
-
-/* generic PxQ multiplier */
-void fp_mul_comba(fp_int *A, fp_int *B, fp_int *C)
-{
-   int       ix, iy, iz, tx, ty, pa;
-   fp_digit  c0, c1, c2, *tmpx, *tmpy;
-   fp_int    tmp, *dst;
-
-   COMBA_START;
-   COMBA_CLEAR;
-   
-   /* get size of output and trim */
-   pa = A->used + B->used;
-   if (pa >= FP_SIZE) {
-      pa = FP_SIZE-1;
-   }
-
-   if (A == C || B == C) {
-      fp_zero(&tmp);
-      dst = &tmp;
-   } else {
-      fp_zero(C);
-      dst = C;
-   }
-
-   for (ix = 0; ix < pa; ix++) {
-      /* get offsets into the two bignums */
-      ty = MIN(ix, B->used-1);
-      tx = ix - ty;
-
-      /* setup temp aliases */
-      tmpx = A->dp + tx;
-      tmpy = B->dp + ty;
-
-      /* this is the number of times the loop will iterrate, essentially its 
-         while (tx++ < a->used && ty-- >= 0) { ... }
-       */
-      iy = MIN(A->used-tx, ty+1);
-
-      /* execute loop */
-      COMBA_FORWARD;
-      for (iz = 0; iz < iy; ++iz) {
-          MULADD(*tmpx++, *tmpy--);
-      }
-
-      /* store term */
-      COMBA_STORE(dst->dp[ix]);
-  }
-  COMBA_FINI;
-
-  dst->used = pa;
-  dst->sign = A->sign ^ B->sign;
-  fp_clamp(dst);
-  fp_copy(dst, C);
-}
-
-#endif
+#include "tfm_mul16.cc"
