@@ -111,13 +111,16 @@ class X86Machine:
     def __init__(self):
         self.regs = {}
         # self.mem = Array('mem',BitVecSort(64),BitVecSort(64))
-        self.mem = {}
+        self.mem = {}# TODO: Handle memory overlap
         self.carry = Bool('initialcarry')
         self.uniq = 1
         for i in self.registernames:
             self.regs[i] = BitVec("init_"+self.registernames[i],self.regsize)
             self.regs[X86_REG_RSP] = BitVecVal(self.initsp,64) # We use a special initial stack
             # pointer
+    def free_mem(self):
+        for addr in self.mem:
+            self.mem[addr] = BitVec('init_mem' + hex(addr),64)
     def solve_memoperand(self,op):
         value = BitVecVal(op.disp,64)
         if(op.index != 0):
@@ -166,7 +169,9 @@ class X86Machine:
                 raise UndefinedMemoryError()
         else: 
             raise UnsupportedException()
-    def checkfunction(self,ins,ip,offset):
+    def checkfunction(self,ins,ip,offset, is_test_driver=False):
+        #TODO: Add 'test driver' support, i.e. having one function that sets up memory and making
+        #everything free registers.
         while True:
             
             if ip not in ins:
@@ -174,7 +179,7 @@ class X86Machine:
             i = ins[ip]       
             nextip = ip + i.size
             m = i.mnemonic
-            print hex(ip + offset), i.mnemonic, " ", i.op_str
+        #    print hex(ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - BitVecVal(8,64)
                 self.mem[expr(self.regs[X86_REG_RSP])] = self.readoperand(i.operands[0])
@@ -188,9 +193,11 @@ class X86Machine:
             elif m == "call":
                 oldrsp = self.regs[X86_REG_RSP]
                 rspval = expr(self.regs[X86_REG_RSP])
+                if(is_test_driver):
+                    self.free_mem()
                 self.mem[rspval] = BitVecVal(nextip,64)
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] -BitVecVal(8,64)
-                
+
                 self.checkfunction(ins,expr(self.readoperand(i.operands[0])), offset)
                 if not always_equal(oldrsp, self.regs[X86_REG_RSP]):
                     raise MiscError()
@@ -201,7 +208,14 @@ class X86Machine:
                 b = self.readoperand(i.operands[1])
                 c = a + b 
                 self.carry = c < a 
-                self.writeoperand(i.operands[0],c)
+                self.writeoperand(i.operands[0],c)  
+            elif m == "adc":
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                c = If(self.carry, BitVecVal(1,64), BitVecVal(0,64))
+                out = a + b +c
+                self.carry = out < a | out < a+b 
+                self.writeoperand(i.operands[0],out)
             elif m == "sub":
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
@@ -227,7 +241,7 @@ class X86Machine:
             elif m == "rep stosq":
                 while(expr(self.regs[X86_REG_RCX]) != 0):
                     self.regs[X86_REG_RCX] -= BitVecVal(1,64)
-                    print "store ", hex(expr(self.regs[X86_REG_RDI]))
+#                    print "store ", hex(expr(self.regs[X86_REG_RDI]))
                     self.mem[expr(self.regs[X86_REG_RDI])] = self.regs[X86_REG_RAX]
                     self.regs[X86_REG_RDI] += BitVecVal(8,64)
             else:
@@ -238,4 +252,4 @@ class X86Machine:
 symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
 x = Input("rsa")
 m = X86Machine()
-m.checkfunction(x.ins,x.sym['_Z8run_multv'], x.offset )
+m.checkfunction(x.ins,x.sym['_Z8run_multv'], x.offset,True )
