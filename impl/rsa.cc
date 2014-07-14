@@ -64,14 +64,12 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
           y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
           buf <<= (fp_digit)TABLE;
           for(i=0;i<TABLE;i++){
-            fp_sqr_comba_small16(res,res);            
-            montgomery++;
+            fp_sqr_comba_small16(res,res);    
             fp_montgomery_reduce(res,m, mp);
             assert(res->used == 16);
           }
           gather(table,y,&temp,width);
           fp_mul_comba_16(res, &temp, res );
-          montgomery++;
           fp_montgomery_reduce(res,m, mp); 
         }
         fp_montgomery_reduce(res,m,mp);
