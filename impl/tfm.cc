@@ -553,6 +553,12 @@ int fp_montgomery_setup(fp_int *a, fp_digit *rho)
 #include "tfm_sqr.cc"
 #include "tfm_mont.cc"
 
+int fp_print(fp_int *test){
+        char buf[512];
+        fp_toradix(test,buf,10);
+        printf("%s\n",buf);
+        return 0;
+}
 
 /* $Source: /cvs/libtom/tomsfastmath/src/mont/fp_montgomery_setup.c,v $ */
 /* $Revision: 1.1 $ */

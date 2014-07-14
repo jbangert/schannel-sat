@@ -1,14 +1,10 @@
 
 
 #include "rsa.cc"
-int fp_print(fp_int *test){
-        char buf[128];
-        fp_toradix(test,buf,10);
-        printf("%s\n",buf);
-        return 0;
-}
 int exp_test(void) {
-
+  fp_int n,e,m,c,d,e_m;
+  int x;
+  clock_t t1;
    fp_read_radix(&n,"ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9" , 16);
    fp_read_radix(&e, "10001", 16);
    fp_read_radix(&m, "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd", 16);
@@ -16,7 +12,7 @@ int exp_test(void) {
 
 
    /* test it */
-   table_sc_exp(&m, &e, &n, &e_m);
+   table_sc_exp<16>(&m, &e, &n, &e_m);
    if (fp_cmp(&e_m, &c)) {
       char buf[1024];
       printf("Encrypted text not equal\n");
@@ -25,15 +21,14 @@ int exp_test(void) {
       return 0;
    
    }
-   crt_test();
-
    printf("CLOCKS_PER_SEC = %llu\n", (unsigned long long)CLOCKS_PER_SEC);
    t1 = clock();
    for (x = 0; x < 1000; x++) {
-           fp_exptmod(&m, &e, &n, &e_m);
-//           table_sc_exp(&m, &e, &n, &e_m);
+     //fp_exptmod(&m, &e, &n, &e_m);
+     table_sc_exp<16>(&m, &e, &n, &e_m);
    }
    t1 = clock() - t1;
+   printf("RSA-1024\n");
    printf("1000 RSA operations took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
    printf("RSA encrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 1000.0) );
 
@@ -44,7 +39,7 @@ int exp_test(void) {
    fp_read_radix(&m, "5f323bf0b394b98ffd78727dc9883bb4f42287def6b60fa2a964b2510bc55d61357bf5a6883d2982b268810f8fef116d3ae68ebb41fd10d65a0af4bec0530eb369f37c14b55c3be60223b582372fb6589b648d5a0c7252d1ae2dae5809785d993e9e5d0c4d9b0bcba0cde0d6671734747fba5483c735e1dab7df7b10ec6f62d8", 16);
 
    /* test it */
-    table_sc_exp(&c, &d, &n, &e_m);
+   table_sc_exp<16>(&c, &d, &n, &e_m);
    if (fp_cmp(&e_m, &m)) {
       char buf[1024];
       printf("Decrypted text not equal\n");
@@ -100,5 +95,6 @@ int crt_test(void ){
 }
 
 int main(void){
-        crt_test();
+  exp_test();
+  crt_test();
 }

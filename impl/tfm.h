@@ -560,6 +560,7 @@ void fp_sqr_comba64(fp_int *A, fp_int *B);
 #endif
 extern const char *fp_s_rmap;
 
+extern int fp_print(fp_int *fp);
 #endif
 
 

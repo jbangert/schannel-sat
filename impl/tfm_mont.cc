@@ -7,6 +7,8 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
+
+
 #include <tfm.h>
 #define LO 0
 /******************************************************************/
@@ -458,537 +460,26 @@ asm(                                 \
 
 #endif
 /******************************************************************/
-
-
-
-/* computes x/R == x (mod N) via Montgomery Reduction */
-void fp_montgomery_reduce_16(fp_int *a, fp_int *m, fp_digit mp)
-{
-   fp_digit c[FP_SIZE], *_c, *tmpm, mu, cy;
-   int      oldused, x, y, pa;
-
-#if defined(USE_MEMSET)
-   /* now zero the buff */
-   memset(c, 0, sizeof c);
-#endif
-   assert(m->used== 16);
-   assert(a->used<=32);
-   a->used = 32;
-   pa = m->used;
-
-   /* copy the input */
-   oldused = a->used;
-   for (x = 0; x < oldused; x++) {
-       c[x] = a->dp[x];
-   }
-#if !defined(USE_MEMSET)
-   for (; x < 2*pa+3; x++) {
-       c[x] = 0;
-   }
-#endif
-   MONT_START;
-
-   
-            x = 0; cy   = 0;
-            LOOP_START;
-            _c   = c + 0;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 1; cy   = 0;
-            LOOP_START;
-            _c   = c + 1;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 2; cy   = 0;
-            LOOP_START;
-            _c   = c + 2;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 3; cy   = 0;
-            LOOP_START;
-            _c   = c + 3;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 4; cy   = 0;
-            LOOP_START;
-            _c   = c + 4;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 5; cy   = 0;
-            LOOP_START;
-            _c   = c + 5;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 6; cy   = 0;
-            LOOP_START;
-            _c   = c + 6;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 7; cy   = 0;
-            LOOP_START;
-            _c   = c + 7;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 8; cy   = 0;
-            LOOP_START;
-            _c   = c + 8;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 9; cy   = 0;
-            LOOP_START;
-            _c   = c + 9;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 10; cy   = 0;
-            LOOP_START;
-            _c   = c + 10;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 11; cy   = 0;
-            LOOP_START;
-            _c   = c + 11;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 12; cy   = 0;
-            LOOP_START;
-            _c   = c + 12;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 13; cy   = 0;
-            LOOP_START;
-            _c   = c + 13;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 14; cy   = 0;
-            LOOP_START;
-            _c   = c + 14;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-            x = 15; cy   = 0;
-            LOOP_START;
-            _c   = c + 15;
-            tmpm = m->dp;
-#ifdef INNERMUL8
-            INNERMUL8; _c += 8; tmpm += 8;
-            INNERMUL8; _c += 8; tmpm += 8;
-#else
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-            INNERMUL; ++_c;
-#endif
-            LOOP_END;
-            while (cy) {
-               PROPCARRY;
-               ++_c;
-            }
-  /* now copy out */
-  _c   = c + pa;
-  tmpm = a->dp;
-  for (x = 0; x < pa+1; x++) {
-     *tmpm++ = *_c++;
+template <int used>
+static int fp_less_fixed(fp_int *a, fp_int *b){
+  int x,lt,gt;
+  lt = -1;
+  gt = -1;
+  for(x=0;x<used;x++){
+    asm("cmp  %3, %2;"
+        "cmovb %4, %0;"
+        "cmova %4, %1;"
+        : "=r"(lt), "=r"(gt)
+        : "r"(a->dp[x]), "r"(b->dp[x]), "r"(x), "0"(lt), "1"(gt)
+        :
+        );
   }
-
-  for (; x < oldused; x++)   {
-     *tmpm++ = 0;
-  }
-
-  MONT_FINI;
-
-  a->used = pa+1;
-  fp_clamp(a);
-
-  /* if A >= m then A = A - m */
-  if (fp_cmp_mag (a, m) != FP_LT) {
-    s_fp_sub (a, m, a);
-  }
+  asm("cmp %1,%0;"
+      "cmovle %2, %0;"
+      : "=r"(lt)
+      : "r"(gt) , "r"(0), "0"(lt)
+      :);
+  return lt;
 }
 
 
@@ -996,25 +487,25 @@ void fp_montgomery_reduce_16(fp_int *a, fp_int *m, fp_digit mp)
 void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
 {
    fp_digit c[FP_SIZE], *_c, *tmpm, mu;
-   int      oldused, x, y, pa;
-
-   /* bail if too large */
-   if (m->used > (FP_SIZE/2)) {
-      return;
-   }
+   int       x, y;
+   
    assert(m->used == 16);
    assert(a->used <= 32);
-   a->used = 32;
+   const int aused = 32;
+   const int pa = 16;
+   /* bail if too large */
+   if (pa > (FP_SIZE/2)) {
+      return;
+   }
 
 #if defined(USE_MEMSET)
    /* now zero the buff */
    memset(c, 0, sizeof c);
 #endif
-   pa = m->used;
 
    /* copy the input */
-   oldused = a->used;
-   for (x = 0; x < oldused; x++) {
+
+   for (x = 0; x < aused; x++) {
        c[x] = a->dp[x];
    }
 #if !defined(USE_MEMSET)
@@ -1057,17 +548,22 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
      *tmpm++ = *_c++;
   }
 
-  for (; x < oldused; x++)   {
+  for (; x < aused; x++)   {
      *tmpm++ = 0;
   }
 
   MONT_FINI;
 
-  a->used = pa + 1;
-  fp_clamp(a);
-  
+  //  aused = pa+1;
   /* if A >= m then A = A - m */
-  if (fp_cmp_mag (a, m) != FP_LT) {
+  //  fp_clamp(a);
+  //  if((fp_less_fixed<17>(a,m) != 0) != (fp_cmp_mag(a,m) == FP_LT)){
+  //     fp_print(a);
+  //     fp_print(m);
+  //   }
+  if (!fp_less_fixed<17> (a, m)) {
     s_fp_sub (a, m, a);
   }
+  a->used = pa;
+  //  aused = pa;
 }
