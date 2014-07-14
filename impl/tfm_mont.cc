@@ -481,11 +481,34 @@ static int fp_less_fixed(fp_int *a, fp_int *b){
       :);
   return lt;
 }
-
+//x = y  if a < b
+template <int used> 
+static int fp_notless_move(fp_int *a, fp_int *b, fp_int *x, fp_int *y){
+  int i,lt,gt;
+ lt = -1;
+ gt = -1;
+ for(i=0;i<used;i++){
+   asm("cmp  %3, %2;"
+       "cmovb %4, %0;"
+       "cmova %4, %1;"
+       : "=r"(lt), "=r"(gt)
+       : "r"(a->dp[i]), "r"(b->dp[i]), "r"(i), "0"(lt), "1"(gt)
+       :
+       );
+ }
+ for(i=0;i<used;i++){
+   asm(" cmp %3,%2;" // lt <= gt 
+       "cmovle %1,%0       ;"
+       : "+r"(x->dp[i]), "+r"(y->dp[i])
+      : "r"((unsigned long)lt),"r"((unsigned long)gt) 
+      : );
+ }
+}
 
 /* computes x/R == x (mod N) via Montgomery Reduction */
 void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
 {
+  fp_int test;
    fp_digit c[FP_SIZE], *_c, *tmpm, mu;
    int       x, y;
    
@@ -561,9 +584,11 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
   //     fp_print(a);
   //     fp_print(m);
   //   }
-  if (!fp_less_fixed<17> (a, m)) {
-    s_fp_sub (a, m, a);
-  }
+  s_fp_sub_fixed<17> (a,m, &test);
+  fp_notless_move<17>(a,m,a,&test);
+  // if (!fp_less_fixed<17> (a, m)) {
+  //     s_fp_sub_fixed<17> (a, m, a);
+  //  }
   a->used = pa;
   //  aused = pa;
 }

@@ -46,7 +46,19 @@ void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
   }
   fp_clamp(c);
 }
+template <int used>
+void s_fp_sub_fixed(fp_int *a, fp_int *b, fp_int *c){
+  int      x, oldbused, oldused;
+  fp_word  t;
 
+  c->used  = used;
+  t       = 0;
+  for (x = 0; x < used; x++) {
+     t         = ((fp_word)a->dp[x]) - (((fp_word)b->dp[x]) + t);
+     c->dp[x]  = (fp_digit)t;
+     t         = (t >> DIGIT_BIT)&1;
+  }
+}
 /* unsigned subtraction ||a|| >= ||b|| ALWAYS! */
 void s_fp_sub(fp_int *a, fp_int *b, fp_int *c)
 {
