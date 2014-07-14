@@ -238,18 +238,36 @@ class X86Machine:
                 self.carry = False
             elif m == "mov":
                 self.writeoperand(i.operands[0], self.readoperand(i.operands[1]))
+            elif m == "and":
+                self.carry = False
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                self.writeoperand(i.operands[0], a & b)
+            elif m == "shr":
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                self.writeoperand(i.operands[0], a >> b)                
             elif m == "rep stosq":
                 while(expr(self.regs[X86_REG_RCX]) != 0):
                     self.regs[X86_REG_RCX] -= BitVecVal(1,64)
 #                    print "store ", hex(expr(self.regs[X86_REG_RDI]))
                     self.mem[expr(self.regs[X86_REG_RDI])] = self.regs[X86_REG_RAX]
                     self.regs[X86_REG_RDI] += BitVecVal(8,64)
+            elif m == "rep movsq":
+                while(expr(self.regs[X86_REG_RCX]) != 0):
+                    #TODO handle direction flag
+                    self.regs[X86_REG_RCX] -= BitVecVal(1,64)
+#                    print "store ", hex(expr(self.regs[X86_REG_RDI]))
+                    self.mem[expr(self.regs[X86_REG_RDI])] = self.mem[expr(self.regs[X86_REG_RSI])]
+                    self.regs[X86_REG_RDI] += BitVecVal(8,64)
+                    self.regs[X86_REG_RSI] += BitVecVal(8,64)
+                
             else:
                 print "unknown ", m
                 
             ip = nextip
 
 symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
-x = Input("rsa")
+x = Input(sys.argv[1])
 m = X86Machine()
-m.checkfunction(x.ins,x.sym['_Z8run_multv'], x.offset,True )
+m.checkfunction(x.ins,x.sym['main'], x.offset,True )
