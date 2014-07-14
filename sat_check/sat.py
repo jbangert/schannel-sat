@@ -29,7 +29,17 @@ def always_equal(e1, e2):
     s.add(e1!=e2)
     print "Checking: " , e1 != e2
     return s.check() == unsat
-
+def boolexpr(expr):
+    s = Solver()
+    r = Bool("result")
+    s.add(r==expr)
+    s.check()
+    m = s.model()
+    res = is_true(m[r])
+    s.add(r!= BoolVal(res))
+    if(s.check()!= unsat):
+        raise ForkException
+    return res
 def expr(expr):
     s = Solver()
     r = BitVec("result",64)
@@ -102,7 +112,15 @@ class X86Machine:
     regs_8 = {X86_REG_AL : X86_REG_RAX,
                X86_REG_CL : X86_REG_RCX,
                X86_REG_DL : X86_REG_RDX,
-               X86_REG_BL : X86_REG_RBX}
+               X86_REG_BL : X86_REG_RBX,
+               X86_REG_R8B : X86_REG_R8,
+               X86_REG_R9B : X86_REG_R9,
+               X86_REG_R10B : X86_REG_R10,  
+               X86_REG_R11B : X86_REG_R11,
+               X86_REG_R12B : X86_REG_R12,
+               X86_REG_R13B : X86_REG_R13,
+               X86_REG_R14B : X86_REG_R14,
+               X86_REG_R15B : X86_REG_R15}
 
 
     
@@ -147,17 +165,20 @@ class X86Machine:
             self.mem[addr] = expr
         else:
             raise UnsupportedException()
+    def readreg(self,reg):
+        if reg in self.registernames:
+            return self.regs[reg]
+        elif reg in self.regs_32:
+            return self.readreg(self.regs_32[reg]) & BitVecVal(0xFFFFFFFF,64)
+        elif reg in self.regs_8:
+            return self.readreg(self.regs_8[reg]) & BitVecVal(0xFF,64)
+        else:
+            print reg
+            raise MiscError()
+        
     def readoperand(self,operand):
         if operand.type == X86_OP_REG:
-            if operand.reg in self.registernames:
-                return self.regs[operand.reg]
-            elif operand.reg in self.regs_32:
-                return self.regs[self.regs_32[operand.reg]] & BitVecVal(0xFFFFFFFF,64)
-            elif operand.reg in self.regs_8:
-                self.regs[self.regs_8[operand.reg]] & BitVecVal(0xFF,64)
-            else:
-                print operand.reg
-                raise MiscError()
+            return self.readreg(operand.reg)
         elif operand.type == X86_OP_IMM:
             return BitVecVal(operand.imm,64) 
         elif operand.type == X86_OP_MEM:
@@ -169,6 +190,16 @@ class X86Machine:
                 raise UndefinedMemoryError()
         else: 
             raise UnsupportedException()
+    def resflags(self,expr):
+        self.ZF = (expr == BitVecVal(0,64))
+        self.SF = (Extract(63,63,expr) == BitVecVal(1,1))
+
+
+    def cond_a(self):
+        return And(Not(self.carry), Not(self.ZF))
+    def cond_b(self):
+        return self.carry
+        
     def checkfunction(self,ins,ip,offset, is_test_driver=False):
         #TODO: Add 'test driver' support, i.e. having one function that sets up memory and making
         #everything free registers.
@@ -179,7 +210,7 @@ class X86Machine:
             i = ins[ip]       
             nextip = ip + i.size
             m = i.mnemonic
-        #    print hex(ip + offset), i.mnemonic, " ", i.op_str
+#            print hex(ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - BitVecVal(8,64)
                 self.mem[expr(self.regs[X86_REG_RSP])] = self.readoperand(i.operands[0])
@@ -203,12 +234,41 @@ class X86Machine:
                     raise MiscError()
                 if not always_equal(self.mem[rspval],BitVecVal(nextip , 64)):
                     raise MiscError()
+            elif m == "jmp":
+                nextip = self.readoperand(i.operands[0])
+            elif m == "je":
+                if(boolexpr(self.ZF)):
+                    nextip = expr(self.readoperand(i.operands[0]))
+            elif m == "jne":
+                if(not boolexpr(self.ZF)):
+                    nextip = expr(self.readoperand(i.operands[0]))
+            elif m == "and":
+                self.carry = False
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                self.writeoperand(i.operands[0], a & b)
+                self.resflags(a&b)
+            elif m == "test":
+                self.carry = BoolVal(False)
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                c = a & b
+                self.carry = BoolVal(False)
+            elif m == "cmp":
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                c = a - b 
+                self.carry = b>a
+                self.resflags(c)
+            elif m == "nop":
+                True
             elif m == "add":
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
                 c = a + b 
                 self.carry = c < a 
                 self.writeoperand(i.operands[0],c)  
+                self.resflags(c)
             elif m == "adc":
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
@@ -216,12 +276,23 @@ class X86Machine:
                 out = a + b +c
                 self.carry = out < a | out < a+b 
                 self.writeoperand(i.operands[0],out)
+                self.resflags(c)
             elif m == "sub":
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
                 c = a - b 
                 self.carry = b>a
                 self.writeoperand(i.operands[0],c)
+                self.resflags(c)
+            elif m == "sbb":
+                
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                c = If(self.carry, BitVecVal(1,64), BitVecVal(0,64))
+                out = a - b - c
+                self.carry = b + c > a
+                self.writeoperand(i.operands[0],out)
+                self.resflags(c)
             elif m == "lea":
                 if(i.operands[1].type != X86_OP_MEM):
                     print "LEA with operand type", i.operands[1].type
@@ -230,40 +301,64 @@ class X86Machine:
             elif m == "mul":
                 self.regs[X86_REG_EDX] = BitVec("unk" + str(self.uniq),64)
                 self.regs[X86_REG_EAX] = BitVec("unk" + str(self.uniq+1),64)
+                self.uniq+=2      
+            elif m == "imul":
+                self.regs[X86_REG_EDX] = BitVec("unk" + str(self.uniq),64)
+                self.regs[X86_REG_EAX] = BitVec("unk" + str(self.uniq+1),64)
                 self.uniq+=2
             elif m == "xor":
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
+                self.resflags(a^b)
                 self.writeoperand(i.operands[0], a ^ b)
-                self.carry = False
+                self.carry = BoolVal(False)
             elif m == "mov":
                 self.writeoperand(i.operands[0], self.readoperand(i.operands[1]))
-            elif m == "and":
-                self.carry = False
-                a = self.readoperand(i.operands[0])
-                b = self.readoperand(i.operands[1])
-                self.writeoperand(i.operands[0], a & b)
+            elif m == "movzx":
+                self.writeoperand(i.operands[0], self.readoperand(i.operands[1])) 
             elif m == "shr":
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
-                self.writeoperand(i.operands[0], a >> b)                
+                self.resflags(a>>b)
+                self.writeoperand(i.operands[0], a >> b)           
+            elif m == "setb":
+                self.writeoperand(i.operands[0], If(self.carry, BitVecVal(1,64), BitVecVal(0,64)))
+            elif m == "cmovb":
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                self.writeoperand(i.operands[0], If(self.cond_b(),b,a ))
+            elif m == "cmovnb"  or m == "cmovae":
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                self.writeoperand(i.operands[0], If(Not(self.cond_b()),b,a ))
+            elif m == "cmova":
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                self.writeoperand(i.operands[0], If(self.cond_a(),b,a ))
+            elif m == "cmovna" or m == "cmovbe":
+                a = self.readoperand(i.operands[0])
+                b = self.readoperand(i.operands[1])
+                self.writeoperand(i.operands[0], If(Not(self.cond_a()),b,a ))
+                
+                
             elif m == "rep stosq":
                 while(expr(self.regs[X86_REG_RCX]) != 0):
                     self.regs[X86_REG_RCX] -= BitVecVal(1,64)
-#                    print "store ", hex(expr(self.regs[X86_REG_RDI]))
+#                    print "store ", expr(self.regs[X86_REG_RDI])
                     self.mem[expr(self.regs[X86_REG_RDI])] = self.regs[X86_REG_RAX]
                     self.regs[X86_REG_RDI] += BitVecVal(8,64)
             elif m == "rep movsq":
                 while(expr(self.regs[X86_REG_RCX]) != 0):
                     #TODO handle direction flag
                     self.regs[X86_REG_RCX] -= BitVecVal(1,64)
-#                    print "store ", hex(expr(self.regs[X86_REG_RDI]))
+#                    print "store ", expr(self.regs[X86_REG_RDI])
+#                    print "load ", expr(self.regs[X86_REG_RSI])
                     self.mem[expr(self.regs[X86_REG_RDI])] = self.mem[expr(self.regs[X86_REG_RSI])]
                     self.regs[X86_REG_RDI] += BitVecVal(8,64)
                     self.regs[X86_REG_RSI] += BitVecVal(8,64)
                 
             else:
-                print "unknown ", m
+                print "unknown ", m, " ", i.op_str
                 
             ip = nextip
 

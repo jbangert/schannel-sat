@@ -463,19 +463,19 @@ asm(                                 \
 template <int used>
 static int fp_less_fixed(fp_int *a, fp_int *b){
   int x,lt,gt;
-  lt = -1;
-  gt = -1;
+  lt = 0;
+  gt = 0;
   for(x=0;x<used;x++){
     asm("cmp  %3, %2;"
         "cmovb %4, %0;"
         "cmova %4, %1;"
         : "=r"(lt), "=r"(gt)
-        : "r"(a->dp[x]), "r"(b->dp[x]), "r"(x), "0"(lt), "1"(gt)
+        : "r"(a->dp[x]), "r"(b->dp[x]), "r"(x+1), "0"(lt), "1"(gt)
         :
         );
   }
   asm("cmp %1,%0;"
-      "cmovle %2, %0;"
+      "cmovna %2, %0;"
       : "=r"(lt)
       : "r"(gt) , "r"(0), "0"(lt)
       :);
@@ -485,20 +485,20 @@ static int fp_less_fixed(fp_int *a, fp_int *b){
 template <int used> 
 static int fp_notless_move(fp_int *a, fp_int *b, fp_int *x, fp_int *y){
   int i,lt,gt;
- lt = -1;
- gt = -1;
+ lt = 0;
+ gt = 0;
  for(i=0;i<used;i++){
    asm("cmp  %3, %2;"
        "cmovb %4, %0;"
        "cmova %4, %1;"
        : "=r"(lt), "=r"(gt)
-       : "r"(a->dp[i]), "r"(b->dp[i]), "r"(i), "0"(lt), "1"(gt)
+       : "r"(a->dp[i]), "r"(b->dp[i]), "r"(i+1), "0"(lt), "1"(gt)
        :
        );
  }
  for(i=0;i<used;i++){
    asm(" cmp %3,%2;" // lt <= gt 
-       "cmovle %1,%0       ;"
+       "cmovna %1,%0       ;"
        : "+r"(x->dp[i]), "+r"(y->dp[i])
       : "r"((unsigned long)lt),"r"((unsigned long)gt) 
       : );

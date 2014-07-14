@@ -19,7 +19,6 @@ int exp_test(void) {
       fp_toradix(&e_m, buf, 16);
       printf("e_m == %s\n", buf);
       return 0;
-   
    }
    printf("CLOCKS_PER_SEC = %llu\n", (unsigned long long)CLOCKS_PER_SEC);
    t1 = clock();
