@@ -481,28 +481,40 @@ static int fp_less_fixed(fp_int *a, fp_int *b){
       :);
   return lt;
 }
-//x = y  if a < b
+#define fp_notless(a,b)                                           \
+  int i,lt=0,gt=0;                                                \
+  for(i=0;i<used;i++){                                            \
+  asm("cmp  %3, %2;"                                              \
+  "cmovb %4, %0;"                                                 \
+  "cmova %4, %1;"                                                 \
+  : "=r"(lt), "=r"(gt)                                            \
+    : "r"(a->dp[i]), "r"(b->dp[i]), "r"(i+1), "0"(lt), "1"(gt)    \
+      :                                                           \
+      );                                                          \
+  }
+
 template <int used> 
 static int fp_notless_move(fp_int *a, fp_int *b, fp_int *x, fp_int *y){
-  int i,lt,gt;
- lt = 0;
- gt = 0;
- for(i=0;i<used;i++){
-   asm("cmp  %3, %2;"
-       "cmovb %4, %0;"
-       "cmova %4, %1;"
-       : "=r"(lt), "=r"(gt)
-       : "r"(a->dp[i]), "r"(b->dp[i]), "r"(i+1), "0"(lt), "1"(gt)
-       :
-       );
- }
- for(i=0;i<used;i++){
-   asm(" cmp %3,%2;" // lt <= gt 
-       "cmovna %1,%0       ;"
-       : "+r"(x->dp[i]), "+r"(y->dp[i])
+  fp_notless(a,b);
+  for(i=0;i<used;i++){
+    asm(" cmp %3,%2;" // lt <= gt 
+        "cmovna %1,%0       ;"
+        : "+r"(x->dp[i]), "+r"(y->dp[i])
+        : "r"((unsigned long)lt),"r"((unsigned long)gt) 
+        : );
+  }
+}
+template <int used> 
+static int fp_notless_setlsb(fp_int *a, fp_int *b, fp_int *x){ 
+  fp_notless(a,b);
+  fp_digit dummy;
+  asm(" mov %0,%1;"  
+      " inc %1;"
+      " cmp %3,%2;" // lt <= gt 
+      "cmovna %1,%0       ;"
+      : "+r"(x->dp[0]), "=&r"(dummy)
       : "r"((unsigned long)lt),"r"((unsigned long)gt) 
       : );
- }
 }
 
 /* computes x/R == x (mod N) via Montgomery Reduction */

@@ -17,7 +17,33 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include <tfm.h>
+#include <tfm.h> 
+template <int used>
+void s_fp_add_fixed(fp_int *a, fp_int *b, fp_int *c){
+  int      x;
+  register fp_word  t;
+  c->used = used;
+ 
+  t = 0;
+  for (x = 0; x < used; x++) {
+      t         += ((fp_word)a->dp[x]) + ((fp_word)b->dp[x]);
+      c->dp[x]   = (fp_digit)t;
+      t        >>= DIGIT_BIT;
+  }
+}
+template <int used>
+void s_fp_sub_fixed(fp_int *a, fp_int *b, fp_int *c){
+  int      x, oldbused, oldused;
+  fp_word  t;
+
+  c->used  = used;
+  t       = 0;
+  for (x = 0; x < used; x++) {
+     t         = ((fp_word)a->dp[x]) - (((fp_word)b->dp[x]) + t);
+     c->dp[x]  = (fp_digit)t;
+     t         = (t >> DIGIT_BIT)&1;
+  }
+}
 
 /* unsigned addition */
 void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
@@ -45,19 +71,6 @@ void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
      c->dp[x] = 0;
   }
   fp_clamp(c);
-}
-template <int used>
-void s_fp_sub_fixed(fp_int *a, fp_int *b, fp_int *c){
-  int      x, oldbused, oldused;
-  fp_word  t;
-
-  c->used  = used;
-  t       = 0;
-  for (x = 0; x < used; x++) {
-     t         = ((fp_word)a->dp[x]) - (((fp_word)b->dp[x]) + t);
-     c->dp[x]  = (fp_digit)t;
-     t         = (t >> DIGIT_BIT)&1;
-  }
 }
 /* unsigned subtraction ||a|| >= ||b|| ALWAYS! */
 void s_fp_sub(fp_int *a, fp_int *b, fp_int *c)
@@ -564,11 +577,19 @@ int fp_montgomery_setup(fp_int *a, fp_digit *rho)
 #include "tfm_mul.cc"
 #include "tfm_sqr.cc"
 #include "tfm_mont.cc"
-
+#include "mydiv.cc"
 int fp_print(fp_int *test){
-        char buf[512];
+        char buf[1024];
+        //        test->used = 32;
         fp_toradix(test,buf,10);
         printf("%s\n",buf);
+        return 0;
+}
+
+int fp_print_stderr(fp_int *test){
+        char buf[1024];
+        fp_toradix(test,buf,10);
+        fprintf(stderr,"%s\n",buf);
         return 0;
 }
 

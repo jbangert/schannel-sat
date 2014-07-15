@@ -21,6 +21,8 @@ template <int used>
 int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
         fp_digit table[FP_SIZE * (1<<TABLE)];   
         fp_int temp, temp1;
+
+        fp_int foo_testing;
         fp_digit buf,mp,y;
         int i,digidx,err, bitcnt;
         int width = m->used;
@@ -30,10 +32,12 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
         /* now we need R mod m */
         fp_montgomery_calc_normalization (&temp, m); //Set used to 16 everywhere!
         /* now set R[0][1] to G * R mod m */
-        fp_mod(a, m, &temp1);
+        //        fp_mod(a, m, &temp1);
+        fp_mod_fixed<2*used>(a,m,&temp1);
+        temp1.used = used;          
         fp_mul_comba_16(&temp1,&temp,&temp1);
-        fp_mod(&temp1,m,&temp1);
-
+        fp_mod_fixed<2*used>(&temp1,m,&temp1);
+        temp1.used = used;
         //Table[0] = Mont(1) = temp
         //Table[1] = Mont(a) = temp1
         scatter(table,0, &temp, width);
@@ -75,13 +79,17 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *res){
         fp_montgomery_reduce(res,m,mp);
         return 0;
 }
+
+
 int rsa_crt(fp_int *c, fp_int *p, fp_int *q, fp_int *d_p, fp_int *d_q, fp_int *q_inv, fp_int *m){
         fp_int m1,m2;
+        
         table_sc_exp<16>(c,d_p,p,&m1);
         table_sc_exp<16>(c,d_q,q,&m2);
         fp_sub(&m1,&m2,&m1);
         fp_mul_comba_16(q_inv,&m1,&m1);
         fp_mod(&m1,p,&m1);
+
         fp_mul_comba_16(q,&m1,&m1);
         fp_add(&m1,&m2,m);
         
