@@ -3,6 +3,23 @@
 #else
 #define dbg_num(a,q) {}
 #endif
+
+template <int used>
+void fp_rsamod_fixed(fp_int *a,fp_int *b, fp_int *r){
+  //Thanks to Jelle van den Hooff for suggesting repeated subtraction. Because MSB[p] and MSB[q]= 1,
+  //we always divide with a normalized number
+  int i;
+  fp_int tmp;
+  fp_copy(a,r);
+  for(i=0;i<4;i++){
+    s_fp_sub_fixed<used>(r,b,&tmp);
+    fp_notless_move<used>(r,b,r,&tmp);
+  }
+  fp_mod(a,b,&tmp);
+  assert(fp_cmp_mag(r,&tmp) == FP_EQ);
+}
+
+
 template <int used>
 void fp_div_fixed(fp_int *a,fp_int *orig_b, fp_int *q, fp_int *rout){
   fp_int tmp, b,r;
