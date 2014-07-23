@@ -1,4 +1,4 @@
-CXXFLAGS= -I. -ggdb  -Wno-write-strings -O3 -DNODEBUG 
+CXXFLAGS= -I. -ggdb  -Wno-write-strings -O3 -DNDEBUG  -fno-omit-frame-pointer 
 TFMDIR=../tomsfastmath-0.12/src
 BINARIES= functionality_test mult_driver sqr_driver mont_driver div_test
 ACCESSORY= $(TFMDIR)/bin/*.c $(TFMDIR)/bit/*.c $(TFMDIR)/addsub/fp_cmp*.c $(TFMDIR)/mul/fp_mul_d.c $(TFMDIR)/misc/fp_set.c

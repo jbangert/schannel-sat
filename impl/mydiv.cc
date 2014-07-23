@@ -19,7 +19,26 @@ void fp_rsamod_fixed(fp_int *a,fp_int *b, fp_int *r){
   assert(fp_cmp_mag(r,&tmp) == FP_EQ);
 }
 
-
+template <int used> 
+void fp_rotateleft1(fp_int *a);
+asm(".macro m_looprclq reg,from,to;\n"
+      "rclq  8*\\from  ( \\reg )\n"
+      ".if \\to-\\from \n"
+      "m_looprclq \\reg,\" (\\from + 1)\" , \\to \n"
+    ".endif; .endm\n");
+template <> 
+void fp_rotateleft1<17>(fp_int *a){
+    asm("clc; \n"
+      " m_looprclq %0,0,17\n"
+      : : "r"(a->dp)      );
+}
+template <> 
+void fp_rotateleft1<34>(fp_int *a){
+    asm("clc; \n"
+      " m_looprclq %0,0,33\n"
+      : : "r"(a->dp)      );
+  
+}
 template <int used>
 void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
   fp_int tmp, b,r;
@@ -31,10 +50,15 @@ void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
   for(i=0; i< used* DIGIT_BIT;i++){
     //fp_add(&r,&r,&r);
     //fp_add(q,q,q);
-    s_fp_add_fixed<2*used>(&r,&r,&r);  
+    //s_fp_add_fixed<2*used>(&r,&r,&tmp);
+    fp_rotateleft1<2*used>(&r);  
+
+     //assert(fp_cmp_mag(&tmp,&r) == FP_EQ);
+    
     s_fp_sub_fixed<2*used>(&r,&b,&tmp);
     fp_notless_move<2*used>(&r,&b,&r,&tmp);
   }
+  r.used = 2*used;
   fp_rshd(&r,used);
   r.used = used;
   if(a->sign == 1){
