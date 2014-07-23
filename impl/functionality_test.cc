@@ -74,7 +74,7 @@ int crt_test(void ){
         // }
         rsa_crt(&c,&p,&q,&d_p,&d_q,&q_inv,&e_m);
         if (fp_cmp(&e_m, &m)) {
-                char buf[1024];
+                char buf[4096];
                 printf("Encrypted text not equal\n");
                 fp_toradix(&e_m, buf, 16);
                 printf("e_m == %s\n", buf);
@@ -94,6 +94,6 @@ int crt_test(void ){
 }
 
 int main(void){
-  exp_test();
+  //exp_test();
   crt_test();
 }

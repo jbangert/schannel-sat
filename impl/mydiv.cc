@@ -21,41 +21,41 @@ void fp_rsamod_fixed(fp_int *a,fp_int *b, fp_int *r){
 
 
 template <int used>
-void fp_div_fixed(fp_int *a,fp_int *orig_b, fp_int *q, fp_int *rout){
+void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
   fp_int tmp, b,r;
   fp_zero(&tmp);
   fp_copy(orig_b,&b);
-  dbg_num(b,&b);
   fp_copy(a,&r);
-  dbg_num(r,&r);
-  fp_zero(q);
   fp_lshd(&b,used);
-  dbg_num(b,&b);
   unsigned i;
   for(i=0; i< used* DIGIT_BIT;i++){
-    s_fp_add_fixed<2*used>(&r,&r,&r);    
-    s_fp_add_fixed<2*used>(q,q,q);
-    dbg_num(r2,&r);
-    dbg_num(B,&b);
-    fp_sub(&r,&b,&tmp);
-    //TODO: reuse the same comparison here
-    fp_notless_setlsb<2*used>(&r,&b,q);
-    /*if(!fp_less_fixed<2*used>(&r,&b))
-      printf("LT\n"); */
+    //fp_add(&r,&r,&r);
+    //fp_add(q,q,q);
+    s_fp_add_fixed<2*used>(&r,&r,&r);  
+    s_fp_sub_fixed<2*used>(&r,&b,&tmp);
     fp_notless_move<2*used>(&r,&b,&r,&tmp);
-    dbg_num(q,q);
-    dbg_num(r,&r);
   }
   fp_rshd(&r,used);
   r.used = used;
-  q->used = used;
+  if(a->sign == 1){
+    s_fp_sub(orig_b,&r,&r);
+    r.sign = 0;
+  }
   if(rout)
     fp_copy(&r,rout);
 }
 
 template <int used> 
+void fp_clean (fp_int *fp){
+  for(int i =used;i<FP_SIZE;i++)
+    fp->dp[i] = 0;
+}
+template <int used> 
 void fp_mod_fixed(fp_int *a, fp_int  *b, fp_int *c){
-  fp_int  t;
-
-  fp_div_fixed<used>(a,b,&t,c);
+  fp_int tmp;
+    fp_zero(&tmp);
+  fp_modimpl_fixed<used>(a,b,c);
+  fp_mod(a,b,&tmp);
+  tmp.used = c->used;
+  assert(FP_EQ == fp_cmp_mag(&tmp, c));
 }
