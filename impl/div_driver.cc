@@ -5,9 +5,9 @@ extern "C" int main(void){
   int i =0;
   x.used = y.used = 16;
   x.sign = y.sign = 1;
-  for(i=0;i<17;i++){
-    x.dp[i]=1;
-    y.dp[i]=1;
+  for(i=0;i<FP_SIZE;i++){
+    x.dp[i]=0;
+    y.dp[i]=0;
   }
   fp_mod_fixed<17>(&x,&y,&z);
 }

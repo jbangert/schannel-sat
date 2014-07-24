@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 from z3 import *
 from capstone_leaky import *
 from capstone_leaky.x86 import *
@@ -148,9 +149,9 @@ class X86Machine:
             else:
                 value = value + BitVecVal(op.scale,64) * self.regs[op.index]
         if(op.base != 0):
-            if(op.base == X86_REG_RIP):
-                value = value + self.ip
-            else:
+#            if(op.base == X86_REG_RIP):
+#                value = value + self.ip
+#            else:
                 value = value + self.regs[op.base]
         return expr(value)
     def writeoperand(self,operand, expr):
@@ -166,7 +167,7 @@ class X86Machine:
                 raise MiscError()
         elif operand.type == X86_OP_MEM:
             addr = self.solve_memoperand(operand.mem)
-            self.mem[addr] = expr
+            self.mem[addr] = simplify(expr)
         else:
             raise UnsupportedException()
     def readreg(self,reg):
@@ -205,8 +206,6 @@ class X86Machine:
         return self.carry
         
     def checkfunction(self,ins,ip,offset, is_test_driver=False):
-        #TODO: Add 'test driver' support, i.e. having one function that sets up memory and making
-        #everything free registers.
         self.ip = ip
         while True:
             self.instcount+=1
@@ -217,7 +216,7 @@ class X86Machine:
             i = ins[self.ip]       
             nextip = self.ip + i.size
             m = i.mnemonic
-#            print hex(ip + offset), i.mnemonic, " ", i.op_str
+#            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - BitVecVal(8,64)
                 self.mem[expr(self.regs[X86_REG_RSP])] = self.readoperand(i.operands[0])
@@ -304,7 +303,7 @@ class X86Machine:
                 if(i.operands[1].type != X86_OP_MEM):
                     print "LEA with operand type", i.operands[1].type
                     raise MiscError()
-                self.writeoperand(i.operands[0],self.solve_memoperand(i.operands[1].mem))
+                self.writeoperand(i.operands[0],BitVecVal(self.solve_memoperand(i.operands[1].mem), 64))
             elif m == "mul":
                 self.regs[X86_REG_EDX] = BitVec("unk" + str(self.uniq),64)
                 self.regs[X86_REG_EAX] = BitVec("unk" + str(self.uniq+1),64)
@@ -366,12 +365,20 @@ class X86Machine:
             elif m == "movdqa" or m == "movaps": # Only microarchitectural differences
                 embed
                 self.writeoperand(i.operands[0],self.readoperand(i.operands[1]))
+            elif m == "clc":
+                self.carry = BoolVal(False)
+            elif m == "rcl" and  len(i.operands)== 1:
+                x = self.readoperand(i.operands[0])
+                oldcarry = If(self.carry, BitVecVal(1,64), BitVecVal(0,64))
+                self.carry = Extract(63,63,x) == BitVecVal(1,1)
+                self.writeoperand(i.operands[0], (x << 1) | oldcarry)
             else:
                 print "unknown ", m, " ", i.op_str
                 
-            ip = nextip
+            self.ip = nextip
 
 symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
 x = Input(sys.argv[1])
 m = X86Machine()
+
 m.checkfunction(x.ins,x.sym['main'], x.offset,True )

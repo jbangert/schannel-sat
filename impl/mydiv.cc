@@ -42,11 +42,13 @@ void fp_rotateleft1<34>(fp_int *a){
 template <int used>
 void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
   fp_int tmp, b,r;
+  unsigned i;
   fp_zero(&tmp);
   fp_copy(orig_b,&b);
   fp_copy(a,&r);
-  fp_lshd(&b,used);
-  unsigned i;
+  for(i=0;i<used;i++)
+    b.dp[i+used] = b.dp[i];
+  //  fp_lshd(&b,used);
   for(i=0; i< used* DIGIT_BIT;i++){
     //fp_add(&r,&r,&r);
     //fp_add(q,q,q);
@@ -59,14 +61,26 @@ void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
     fp_notless_move<2*used>(&r,&b,&r,&tmp);
   }
   r.used = 2*used;
-  fp_rshd(&r,used);
+  for(i=0;i<used;i++)
+    r.dp[i] = r.dp[i+used];
+  //  fp_rshd(&r,used);
   r.used = used;
+  s_fp_sub(orig_b, &r, &tmp);
+  for(i=0;i<used;i++){
+    asm("test %2, %2;"
+        "cmovnz %1, %0;"
+        : "+r"(r.dp[i])
+        : "r" (tmp.dp[i]), "r"(r.sign)
+        :);
+  }
+  r.sign  = 0;
+  /*
   if(a->sign == 1){
     s_fp_sub(orig_b,&r,&r);
     r.sign = 0;
-  }
-  if(rout)
-    fp_copy(&r,rout);
+    } 
+  */
+  fp_copy(&r,rout);
 }
 
 template <int used> 
@@ -76,10 +90,10 @@ void fp_clean (fp_int *fp){
 }
 template <int used> 
 void fp_mod_fixed(fp_int *a, fp_int  *b, fp_int *c){
-  fp_int tmp;
-    fp_zero(&tmp);
-  fp_modimpl_fixed<used>(a,b,c);
-  fp_mod(a,b,&tmp);
-  tmp.used = c->used;
-  assert(FP_EQ == fp_cmp_mag(&tmp, c));
+  fp_modimpl_fixed<used>(a,b,c); 
+  // fp_int tmp;
+  //   fp_zero(&tmp);
+  // fp_mod(a,b,&tmp);
+  // tmp.used = c->used;
+  // assert(FP_EQ == fp_cmp_mag(&tmp, c));
 }
