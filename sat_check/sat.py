@@ -127,6 +127,7 @@ class X86Machine:
     regsize = 64
     initsp = 0x1000
     def __init__(self):
+        self.instcount = 0 
         self.regs = {}
         # self.mem = Array('mem',BitVecSort(64),BitVecSort(64))
         self.mem = {}# TODO: Handle memory overlap
@@ -147,7 +148,10 @@ class X86Machine:
             else:
                 value = value + BitVecVal(op.scale,64) * self.regs[op.index]
         if(op.base != 0):
-            value = value + self.regs[op.base]
+            if(op.base == X86_REG_RIP):
+                value = value + self.ip
+            else:
+                value = value + self.regs[op.base]
         return expr(value)
     def writeoperand(self,operand, expr):
         if operand.type == X86_OP_REG:
@@ -203,12 +207,15 @@ class X86Machine:
     def checkfunction(self,ins,ip,offset, is_test_driver=False):
         #TODO: Add 'test driver' support, i.e. having one function that sets up memory and making
         #everything free registers.
+        self.ip = ip
         while True:
-            
-            if ip not in ins:
+            self.instcount+=1
+            if(self.instcount % 2000 == 0):
+                print self.instcount, " instructions" 
+            if self.ip not in ins:
                 raise UndefinedInstrException()
-            i = ins[ip]       
-            nextip = ip + i.size
+            i = ins[self.ip]       
+            nextip = self.ip + i.size
             m = i.mnemonic
 #            print hex(ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
@@ -356,7 +363,9 @@ class X86Machine:
                     self.mem[expr(self.regs[X86_REG_RDI])] = self.mem[expr(self.regs[X86_REG_RSI])]
                     self.regs[X86_REG_RDI] += BitVecVal(8,64)
                     self.regs[X86_REG_RSI] += BitVecVal(8,64)
-                
+            elif m == "movdqa" or m == "movaps": # Only microarchitectural differences
+                embed
+                self.writeoperand(i.operands[0],self.readoperand(i.operands[1]))
             else:
                 print "unknown ", m, " ", i.op_str
                 
