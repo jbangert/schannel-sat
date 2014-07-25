@@ -1,0 +1,13 @@
+/sat_check/capstone_leaky/__init__.pyc
+/sat_check/capstone_leaky/arm.pyc
+/sat_check/capstone_leaky/arm64.pyc
+/sat_check/capstone_leaky/arm64_const.pyc
+/sat_check/capstone_leaky/arm_const.pyc
+/sat_check/capstone_leaky/capstone.pyc
+/sat_check/capstone_leaky/mips.pyc
+/sat_check/capstone_leaky/mips_const.pyc
+/sat_check/capstone_leaky/ppc.pyc
+/sat_check/capstone_leaky/ppc_const.pyc
+/sat_check/capstone_leaky/x86.pyc
+/sat_check/capstone_leaky/x86_const.pyc
+*.pyc
