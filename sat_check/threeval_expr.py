@@ -1,5 +1,5 @@
 from z3 import *
-set_option(max_args=10000000, max_lines=1000000, max_depth=10000000, max_visited=1000000)
+set_option(max_args=100, max_lines=100, max_depth=5, max_visited=100)
 import operator
 mask = 1<<65-1
 bin = [ '__or__', '__and__', '__xor__', '__lshift__', '__rshift__', '__add__', '__sub__', '__mul__' ]
@@ -19,12 +19,13 @@ class NFree(NUtil):
         self.v = free
     def bv(self):
         return self.v
-    def invert(self):
+    def __invert__(self):
         return NFree(~self.v)
     def as_long(self):
         s = Solver()
         r = BitVec("result",64)
         s.add(r== self.v)
+#        print "Solving for", self.v
         if(s.check() != sat):
             raise ForkException
         m = s.model()
@@ -32,7 +33,8 @@ class NFree(NUtil):
         s.add(r!= res)
         if(s.check()!= unsat):
             raise ForkException
-            return res
+        return res
+        
     def If(self,a,b):
         return NFree(If(Extract(0,0,self.v) == 1, a.bv(), b.bv())) 
 
@@ -41,11 +43,16 @@ class NFree(NUtil):
     for i in bin:
         a = """
 def FOO(self, other):
+        if isinstance(other,(int,long)):
+           other = NValue(other)
+#        print (self.bv(), "FOO", other.bv())
         return NFree(operator.FOO(self.bv(),other.bv()))""".replace("FOO",i)
         exec(a)
     for i in cmp:
         a = """
 def FOO(self, other):
+#        if isinstance(other,(int,long)):
+#           other = NValue(other)
         return NFree(If(operator.FOO(self.bv(), other.bv()), BitVecVal(1,64), BitVecVal(0,64))) """.replace("FOO",i)
         exec(a)
 
@@ -73,6 +80,7 @@ def FOO(self, other):
      if(isinstance(other,(int,long))):
         other = NValue(other)
      if(isinstance(other,NValue)):
+#        print "sweet operation"
         return NValue(operator.FOO(self.value,other.value) & self.mask)
      else:
         return NFree(operator.FOO(self.bv(), other.bv()))""".replace("FOO",i)
@@ -81,7 +89,10 @@ def FOO(self, other):
     for i in cmp:
         a = """
 def FOO(self, other):
+#        if isinstance(other,(int,long)):
+#           other = NValue(other)
         if(isinstance(other,NValue)):
+#           print "sweet comparison"
            if(operator.FOO(self.value, other.value)):
              return NValue(1,64)
            else:

@@ -98,10 +98,11 @@ class X86Machine:
                 value = value + self.regs[op.base]
         return value
     def readmem(self, addr):
-        if(addr.as_long() in self.mem):
+        a = addr.as_long()
+        if(a in self.mem):
             return self.mem[addr.as_long()]
         else:
-            print "Undefined memory address", hex(addr)
+            print "Undefined memory address", hex(a)
             raise UndefinedMemoryError()
     def writemem(self, addr,v):
         self.mem[addr.as_long()] = v
@@ -165,7 +166,7 @@ class X86Machine:
             i = ins[self.ip]       
             nextip = self.ip + i.size
             m = i.mnemonic
-            #print hex(self.ip + offset), i.mnemonic, " ", i.op_str
+#            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - 8
                 self.writemem(self.regs[X86_REG_RSP], self.readoperand(i.operands[0]))
@@ -190,10 +191,10 @@ class X86Machine:
                 nextip = self.readoperand(i.operands[0])
             elif m == "je":
                 if(self.ZF.as_long() != 0):
-                    nextip = expr(self.readoperand(i.operands[0]))
+                    nextip = self.readoperand(i.operands[0]).as_long()
             elif m == "jne":
                 if(self.ZF.as_long() == 0):
-                    nextip = expr(self.readoperand(i.operands[0]))
+                    nextip = self.readoperand(i.operands[0]).as_long()
             elif m == "and":
                 self.carry = NValue(0)
                 a = self.readoperand(i.operands[0])
@@ -239,7 +240,7 @@ class X86Machine:
                 
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
-                c = MyIf(self.carry, 1, 0)
+                c = self.carry #MyIf(self.carry, 1, 0)
                 out = a - b - c
                 self.carry =  (c + b) > a
                 self.writeoperand(i.operands[0],out)
@@ -261,8 +262,12 @@ class X86Machine:
             elif m == "xor":
                 a = self.readoperand(i.operands[0])
                 b = self.readoperand(i.operands[1])
-                self.resflags(a^b)
-                self.writeoperand(i.operands[0], a ^ b)
+                if(a==b):
+                    self.resflags(NValue(0))
+                    self.writeoperand(i.operands[0], NValue(0))
+                else:
+                    self.resflags(a^b)
+                    self.writeoperand(i.operands[0], a ^ b)
                 self.carry = NValue(0)
             elif m == "mov":
                 self.writeoperand(i.operands[0], self.readoperand(i.operands[1]))
@@ -315,8 +320,8 @@ class X86Machine:
                 self.carry = False
             elif m == "rcl" and  len(i.operands)== 1:
                 x = self.readoperand(i.operands[0])
-                oldcarry = MyIf(self.carry, 1, 0)
-                self.carry = MyExtract(63,63,x) == 1
+                oldcarry = self.carry
+                self.carry = (x.extract(63,63) == NValue(1,1))
                 self.writeoperand(i.operands[0], (x << 1) | oldcarry )
             else:
                 print "unknown ", m, " ", i.op_str
