@@ -46,8 +46,10 @@ void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
   fp_zero(&tmp);
   fp_copy(orig_b,&b);
   fp_copy(a,&r);
-  for(i=0;i<used;i++)
+  for(i=0;i<used;i++){
     b.dp[i+used] = b.dp[i];
+    b.dp[i]=0;
+  }
   //  fp_lshd(&b,used);
   for(i=0; i< used* DIGIT_BIT;i++){
     //fp_add(&r,&r,&r);
@@ -61,11 +63,13 @@ void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
     fp_notless_move<2*used>(&r,&b,&r,&tmp);
   }
   r.used = 2*used;
-  for(i=0;i<used;i++)
+  for(i=0;i<used;i++){
     r.dp[i] = r.dp[i+used];
+    r.dp[i+used]=0;
+  }
   //  fp_rshd(&r,used);
   r.used = used;
-  s_fp_sub(orig_b, &r, &tmp);
+  s_fp_sub_fixed<used>(orig_b, &r, &tmp);
   for(i=0;i<used;i++){
     asm("test %2, %2;"
         "cmovnz %1, %0;"
