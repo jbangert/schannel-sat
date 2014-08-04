@@ -62,7 +62,6 @@ void fp_modimpl_fixed(fp_int *a,fp_int *orig_b, fp_int *rout){
     s_fp_sub_fixed<2*used>(&r,&b,&tmp);
     fp_notless_move<2*used>(&r,&b,&r,&tmp);
   }
-  r.used = 2*used;
   for(i=0;i<used;i++){
     r.dp[i] = r.dp[i+used];
     r.dp[i+used]=0;
