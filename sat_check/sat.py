@@ -77,7 +77,7 @@ class X86Machine:
 
 
 
-    initsp = 0x1000
+    initsp = 0x4000
     def __init__(self):
         self.instcount = 0 
         self.regs = {}
@@ -98,7 +98,7 @@ class X86Machine:
             if op.reg in self.registernames:
                 return 64
             elif(op.reg >= X86_REG_XMM0 and op.reg <=  X86_REG_XMM31):
-                return 64
+                return 128
             elif op.reg in self.regs_32:
                 return 32
             elif op.reg in self.regs_8:
@@ -129,6 +129,8 @@ class X86Machine:
             elif operand.reg in self.regs_8:
                 real_reg = self.regs_8[operand.reg]
                 self.regs[real_reg] = ((expr & NValue(0xFF,64)) | (self.regs[real_reg] & ~NValue(0xFF,64)))
+            elif operand.reg >= X86_REG_XMM0 and operand.reg <=  X86_REG_XMM31: 
+                return self.xmmregs[operand.reg- X86_REG_XMM0]
             else:
                 raise MiscError()
         elif operand.type == X86_OP_MEM:
@@ -143,6 +145,8 @@ class X86Machine:
             return self.readreg(self.regs_32[reg]).extract(31,0)
         elif reg in self.regs_8:
             return self.readreg(self.regs_8[reg]).extract(7,0)
+        elif reg >= X86_REG_XMM0 and reg <=  X86_REG_XMM31: 
+            return self.xmmregs[reg- X86_REG_XMM0]
         else:
             print reg
             raise MiscError()
@@ -156,7 +160,6 @@ class X86Machine:
         elif operand.type == X86_OP_MEM:
             addr = self.solve_memoperand(operand.mem)
             return self.mem.read(addr, i.op_size * 8)
-
         else: 
             raise UnsupportedException()
     # def writeop128(self,operand,expr):
@@ -183,8 +186,8 @@ class X86Machine:
     #         msh = self.mem.read(addr + NValue(8)).zeroext(64)
             return lsh | (msh << NValue(64,128))
     def resflags(self,expr):
-        self.ZF = ( NValue(0) == expr)
-        self.SF = ( expr.extract(63,63) == NValue(1,1))
+        self.ZF =  (expr == 0)
+        self.SF = ( expr.extract(expr.size-1,expr.size-1) == NValue(1,1))
 
 
     def cond_a(self):
@@ -192,6 +195,8 @@ class X86Machine:
         # need better logical conjectures
     def cond_b(self):
         return self.carry
+    def cond_eq(self):
+        return self.ZF
         
     def checkfunction(self,ins,ip,offset, is_test_driver=False):
         self.ip = ip
@@ -204,7 +209,7 @@ class X86Machine:
             i = ins[self.ip]       
             nextip = self.ip + i.size
             m = i.mnemonic
-            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
+#            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - 8
                 self.mem.write(self.regs[X86_REG_RSP], self.readoperand(i,0), i.op_size*8)
@@ -221,7 +226,6 @@ class X86Machine:
                     self.mem.make_free()
                 self.mem.write(rspval, NValue(nextip),64)
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] -8
-
                 self.checkfunction(ins,self.readoperand(i,0).as_long(), offset)
                 rspval.assert_equal(self.regs[X86_REG_RSP])
                 self.mem.read(rspval,64).assert_equal(NValue(nextip))
@@ -287,7 +291,10 @@ class X86Machine:
                 if(i.operands[1].type != X86_OP_MEM):
                     print "LEA with operand type", i.operands[1].type
                     raise MiscError()
-                self.writeoperand(i,0,self.solve_memoperand(i.operands[1].mem)) #TODO: Use
+                r = self.solve_memoperand(i.operands[1].mem)
+                if(i.op_size == 4):
+                    r = r.extract(31,0)
+                self.writeoperand(i,0,r) #TODO: Use
                 #a different function for solve_memoperand
             elif m == "mul":
                 self.regs[X86_REG_EDX] = NFree("unk" + str(self.uniq))
@@ -329,6 +336,11 @@ class X86Machine:
                 a = self.readoperand(i,0)
                 b = self.readoperand(i,1)
                 self.writeoperand(i,0, (~self.cond_b()).If(b,a))
+            elif m == "cmovne":
+                a = self.readoperand(i,0)
+                b = self.readoperand(i,1)
+                self.writeoperand(i,0, (~self.cond_eq()).If(b,a))
+                
             elif m == "cmova":
                 a = self.readoperand(i,0)
                 b = self.readoperand(i,1)
@@ -356,7 +368,7 @@ class X86Machine:
                     self.regs[X86_REG_RSI] += 8
             elif m == "movdqa" or m == "movaps" or m == "movups" : # Only microarchitectural differences
               #  embed()
-                self.writeoperand(i,0,self.readoperand(i.operands[1]))
+                self.writeoperand(i,0,self.readoperand(i,1))
        
             elif m == "clc":
                 self.carry = False

@@ -15,11 +15,10 @@ class NUtil:
             raise UnequalException
 
 class NFree(NUtil):
-    def __init__(self, free,size=64):
+    def __init__(self, free,size = 64):
         if(isinstance(free,str)):
             free = BitVec(free,size)
-        assert(free.size() == size)
-        self.size = size
+        self.size = free.size()
         self.v = free
     def bv(self):
         return self.v
@@ -59,8 +58,8 @@ def FOO(self, other):
     for i in cmp:
         a = """
 def FOO(self, other):
-#        if isinstance(other,(int,long)):
-#           other = NValue(other)
+        if isinstance(other,(int,long)):
+               other = NValue(other,self.size)
         return NFree(If(operator.FOO(self.bv(), other.bv()), BitVecVal(1,64), BitVecVal(0,64))) """.replace("FOO",i)
         exec(a)
 
@@ -99,7 +98,7 @@ def FOO(self, other):
         other = NValue(other)
      if(isinstance(other,NValue)):
 #        print "sweet operation"
-        return NValue(operator.FOO(self.value,other.value) & self.mask)
+        return NValue(operator.FOO(self.value,other.value) & self.mask, self.size)
      else:
         return NFree(operator.FOO(self.bv(), other.bv()))""".replace("FOO",i)
         exec(a)
@@ -107,8 +106,8 @@ def FOO(self, other):
     for i in cmp:
         a = """
 def FOO(self, other):
-#        if isinstance(other,(int,long)):
-#           other = NValue(other)
+        if isinstance(other,(int,long)):
+           other = NValue(other)
         if(isinstance(other,NValue)):
 #           print "sweet comparison"
            if(operator.FOO(self.value, other.value)):

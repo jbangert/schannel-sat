@@ -3,6 +3,7 @@
 #include "rsa.cc"
 int exp_test(void) {
   fp_int n,e,m,c,d,e_m;
+  fp_int mont;
   int x;
   clock_t t1;
    fp_read_radix(&n,"ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9" , 16);
@@ -10,9 +11,10 @@ int exp_test(void) {
    fp_read_radix(&m, "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd", 16);
    fp_read_radix(&c, "9ff70ea6968a04530e6b06bf01aa937209cc8450e76ac19477743de996ba3fb445923c947f8d0add8c57efa51d15485309918459da6c1e5a97f215193b797dce98db51bdb4639c2ecfa90ebb051e3a2daeffd27a7d6e62043703a7b15e0ada5170427b63099cd01ef52cd92d8723e5774bea32716aaa7f5adbae817fb12a5b50", 16);
 
-
+   fp_montgomery_calc_normalization(&mont,&n);
+   
    /* test it */
-   table_sc_exp<16>(&m, &e, &n, &e_m);
+   table_sc_exp<16>(&m, &e, &n,&mont, &e_m);
    if (fp_cmp(&e_m, &c)) {
       char buf[1024];
       printf("Encrypted text not equal\n");
@@ -24,7 +26,7 @@ int exp_test(void) {
    t1 = clock();
    for (x = 0; x < 1000; x++) {
      //fp_exptmod(&m, &e, &n, &e_m);
-     table_sc_exp<16>(&m, &e, &n, &e_m);
+     table_sc_exp<16>(&m, &e, &n, &mont, &e_m);
    }
    t1 = clock() - t1;
    printf("RSA-1024\n");
@@ -37,8 +39,10 @@ int exp_test(void) {
    fp_read_radix(&c, "7d216641c32543f5b8428bdd0b11d819cfbdb16f1df285247f677aa4d44de62ab064f4a0d060ec99cb94aa398113a4317f2c550d0371140b0fd2c88886cac771812e72faad4b7adf495b9b850b142ccd7f45c0a27f164c8c7731731c0015f69d0241812e769d961054618aeb9e8e8989dba95714a2cf56c9e525c5e34b5812dd", 16);
    fp_read_radix(&m, "5f323bf0b394b98ffd78727dc9883bb4f42287def6b60fa2a964b2510bc55d61357bf5a6883d2982b268810f8fef116d3ae68ebb41fd10d65a0af4bec0530eb369f37c14b55c3be60223b582372fb6589b648d5a0c7252d1ae2dae5809785d993e9e5d0c4d9b0bcba0cde0d6671734747fba5483c735e1dab7df7b10ec6f62d8", 16);
 
+   fp_montgomery_calc_normalization(&mont,&n);
+   
    /* test it */
-   table_sc_exp<16>(&c, &d, &n, &e_m);
+   table_sc_exp<16>(&c, &d, &n,&mont,  &e_m);
    if (fp_cmp(&e_m, &m)) {
       char buf[1024];
       printf("Decrypted text not equal\n");
@@ -51,6 +55,7 @@ int exp_test(void) {
 int crt_test(void ){
         fp_int p,q,d_p,d_q,q_inv, d,n;
         fp_int c,m,e_m;
+        fp_int mont_p,mont_q;
         int x;
         fp_read_radix(&p,"00f97fd26a3b16684214427718403bef31f16778e63b0f60af7bdd12237675e4d157c05afcffa4fa8b96c13e854b3bfd2e5c5063a48e3105692513a034c8db1331453a605b8430aed329887cf5e272eceb8aca607f86b32200d4ff8bea65081a009a545491deb67389d281824b56a771f7a523793133ad5d751f9ccf198240601f",16);
     
@@ -62,7 +67,8 @@ int crt_test(void ){
         fp_read_radix(&m,"a56c485822ca2705d9e01d54e153d155cbdb2ee32b38ad247e12d82321abda6ce9454101a1306c709a04ef6aeb5c2ba7d9cca9d44b5a71358578ea2d6cce1848c7a4287cfd1322d56561be5d02f47f3d2a868e02455b0a2bc141681be50fa482c1469d8bfc73080b7f0f8841e82668500c249a61327931c16ce87daa768bc30fefddae70665203d1d3ee8e5f3613ec35988365f1fc19711675f06c43065965bf7436d9279bc1c036da96cb33c077958d0c2c9d0d2ece5b6009de6a7389aca0f93b9f0b7690eaa27b797865a0249cf64c7b2d5efc2a90bdbb2f4a2b7bf21b2e7410e6a589f931ed28e1b3647c2dd5a5fdf456a8a667bc3bc56603d4c3fa5590d2",16);
         fp_read_radix(&d, "16ce103ddd354bde68ccb8092498931c047599e17e26c7832530eecf0ddebbe315ed4ec02d8a0aecd29afc52f36f9824c561277c5d1cf1e6f8bde403ad70e3bc2cb2d9ad7405c268c01fe4afc853fc00eeca585cf936945f1f65e8826ab4b1e7585b8cd19213a34de74e57babbecd9d937e98a663f57ef9ca94ef4f0a88e12c33afef03fff8dc98016beaddb4f5dde468c6ffae25e4137896ff9e81f4c783f8691dad676bd1786db4a911674a3e4b77950264aa69182cb20383f9fd1bd91c2f4a50a7b48c42b3c0a9c3d9e267e5c28e8752546ebb08837828d220eb8d2433f0732f28e6b0fe68de916a8a43eede93b5356773c272fc443d1469b3c768bc1cf61",16);
         fp_read_radix(&n, "00f097f1fc44b461bd4435717cf9f8bc1c0162ac0ed64e5e5e7bccbbeb6c35cf9c82923e34ed22789e25937d5c230d2b888d596151c95388d0cc9ad16a0db48cfbe595c65156584a7281434a0034e79df4e7e73d20de5a904e9ec91a8d91307d1dedfc9637abd0bf47d05ee8cd36e017fcc695713ce60b7ef401235e7051b5a0c8510c6613e4aa388a7c4a4059abfe800e35e0b5ab05d898f3ff8aa510048406aea7a9f7ca4a5b1baacc206cb3ec7c07f9950ba0568023a20617c9ab0c941040a28d4c1cc3dc9d97323b4632cd185c5c5df83ad02db2fd8770d476ba2584e9aa0b87f8d345804d3dd128947300d2fd0084050ccb1c4c13e56feb42241b309fa08b",16 );
-
+        fp_montgomery_calc_normalization(&mont_p,&p);
+        fp_montgomery_calc_normalization(&mont_q,&q);
         // //   table_sc_exp(&c, &d, &n, &e_m);
         // if (fp_cmp(&e_m, &m)) {
         //         char buf[1024];
@@ -72,7 +78,7 @@ int crt_test(void ){
         //         exit(-1);
                 
         // }
-        rsa_crt(&c,&p,&q,&d_p,&d_q,&q_inv,&e_m);
+        rsa_crt(&c,&p,&mont_p,&q,&mont_q,&d_p,&d_q,&q_inv,&e_m);
         if (fp_cmp(&e_m, &m)) {
                 char buf[4096];
                 printf("Encrypted text not equal\n");
@@ -85,7 +91,7 @@ int crt_test(void ){
         const int count = 1000;
         t1 = clock();
         for (x = 0; x < count; x++) {
-                rsa_crt(&c,&p,&q,&d_p,&d_q,&q_inv,&e_m);
+                rsa_crt(&c,&p,&mont_p,&q,&mont_q,&d_p,&d_q,&q_inv,&e_m);
         }
         t1 = clock() - t1;
         printf("%d CRT RSA took     %10.5g seconds\n",count, (double)t1 / (double)CLOCKS_PER_SEC);
