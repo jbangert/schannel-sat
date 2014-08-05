@@ -109,7 +109,7 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
                 fp_montgomery_reduce(&temp, m, mp);
                 scatter<used>(table,i,&temp);
         }
-        digidx= b->used-1;
+        digidx= used;
         buf=b->dp[digidx--];
         bitcnt = (int)DIGIT_BIT;
 
