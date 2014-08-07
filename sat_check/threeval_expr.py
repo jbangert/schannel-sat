@@ -1,7 +1,6 @@
 
 import operator
-NOSAT= True
-
+NOSAT= False
 if not NOSAT:
     from z3 import *
     set_option(max_args=100, max_lines=100, max_depth=5, max_visited=100)
@@ -21,8 +20,8 @@ if not NOSAT:
         def __init__(self, free,size = 64):
             if(isinstance(free,str)):
                 free = BitVec(free,size)
-                self.size = free.size()
-                self.v = free
+            self.size = free.size()
+            self.v = free
 	def bv(self):
 	    return self.v
 	def __invert__(self):
@@ -52,18 +51,18 @@ if not NOSAT:
 	    return NFree(ZeroExt(bits,self.v))
 	for i in bin:
 	        a = """
-	def FOO(self, other):
-	        if isinstance(other,(int,long)):
-	           other = NValue(other)
-	#        print (self.bv(), "FOO", other.bv())
-	        return NFree(operator.FOO(self.bv(),other.bv()))""".replace("FOO",i)
-	        exec(a)
+def FOO(self, other):
+        if isinstance(other,(int,long)):
+           other = NValue(other)
+#        print (self.bv(), "FOO", other.bv())
+        return NFree(operator.FOO(self.bv(),other.bv()))""".replace("FOO",i)
+                exec(a)
         for i in cmp:
 	        a = """
-	def FOO(self, other):
-	        if isinstance(other,(int,long)):
-	               other = NValue(other,self.size)
-	        return NFree(If(operator.FOO(self.bv(), other.bv()), BitVecVal(1,64), BitVecVal(0,64))) """.replace("FOO",i)
+def FOO(self, other):
+   if isinstance(other,(int,long)):
+          other = NValue(other,self.size)
+   return NFree(If(operator.FOO(self.bv(), other.bv()), BitVecVal(1,64), BitVecVal(0,64))) """.replace("FOO",i)
                 exec(a)
 else:	
 	class NFree(NUtil):
