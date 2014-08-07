@@ -11,3 +11,5 @@
 /sat_check/capstone_leaky/x86.pyc
 /sat_check/capstone_leaky/x86_const.pyc
 *.pyc
+\#*
+.\#*
