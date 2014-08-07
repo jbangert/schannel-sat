@@ -30,12 +30,13 @@ class Memory:
         except ForkException:
             print "ForkException caught" 
             assert(length == 64) # We can only do 8 bit gather for now, to make the array logic smaller
-            cacheline = addr.extract(63,linebits).as_long()
-            slot = addr.extract(linebits,4)
+            cacheline = addr.extract(63,self.cachebits).as_long()
+            slot = addr.extract(self.cachebits,4)
             align = addr.extract(3,0).as_long()
             if(align!= NValue(0,3)):
                 raise ForkException
-            raise UnimplementedException
+            raise UnimplementedException 
+            return NFree("foo",length)
             # Build a huge if on slot 
             
     def make_free(self):

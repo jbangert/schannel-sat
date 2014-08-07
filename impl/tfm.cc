@@ -31,8 +31,8 @@ void s_fp_add_fixed(fp_int *a, fp_int *b, fp_int *c){
       t        >>= DIGIT_BIT;
   }
 }
-template <int used>
-void s_fp_sub_fixed(fp_int *a, fp_int *b, fp_int *c){
+template<int used>
+void s_fp_sub_fixed2(fp_int *a, fp_int *b, fp_int *c){
   int      x, oldbused, oldused;
   fp_word  t;
 
@@ -44,6 +44,36 @@ void s_fp_sub_fixed(fp_int *a, fp_int *b, fp_int *c){
      t         = (t >> DIGIT_BIT)&1;
   }
 }
+asm (".macro m_subfixedloop a,b,c,tmp,iter,to ;\n"
+     "movq 8*\\iter ( \\a ), \\tmp \n"
+     "sbb 8*\\iter(\\b), \\tmp  \n"
+     "movq \\tmp, 8*\\iter(\\c) \n"
+     ".if \\to-\\iter \n"
+     "m_subfixedloop \\a,\\b,\\c,\\tmp, \"(\\iter + 1)\", \\to \n"
+     ".endif;\n .endm\n");
+template <int used>
+void s_fp_sub_fixed(fp_int *a, fp_int *b, fp_int *c);
+template <>
+void s_fp_sub_fixed<17> (fp_int *a, fp_int *b, fp_int *c){
+  c->used  = 17;
+  register fp_digit tmp;
+  asm volatile("clc; \n"
+      "m_subfixedloop %0,%1,%2,%3,0,17; \n"
+      :
+      : "r"(a->dp), "r"(b->dp), "r"(c->dp), "r"(tmp)
+               : "memory");
+}
+template <>
+void s_fp_sub_fixed<34>(fp_int *a, fp_int *b, fp_int *c) {
+  c->used  = 34;
+  register fp_digit tmp;
+  asm("clc; \n"
+      "m_subfixedloop %0,%1,%2,%3,0,34; \n"
+      :
+      : "r"(a->dp), "r"(b->dp), "r"(c->dp), "r"(tmp)
+      : "memory");
+}
+
 
 /* unsigned addition */
 void s_fp_add(fp_int *a, fp_int *b, fp_int *c)

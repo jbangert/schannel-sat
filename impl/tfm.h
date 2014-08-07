@@ -290,7 +290,7 @@
 /* a FP type */
 typedef struct {
     fp_digit dp[FP_SIZE];
-    int      used, 
+        int  used, 
              sign;
 } fp_int;
 

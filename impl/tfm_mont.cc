@@ -481,8 +481,8 @@ static int fp_less_fixed(fp_int *a, fp_int *b){
       :);
   return lt;
 }
-#define fp_notless(a,b)                                           \
-  int i,lt=0,gt=0;                                                \
+#define fp_notless_u(a,b,used)                                    \
+  int i=0,lt=0,gt=0;                                                \
   for(i=0;i<used;i++){                                            \
   asm("cmp  %3, %2;"                                              \
   "cmovb %4, %0;"                                                 \
@@ -493,16 +493,44 @@ static int fp_less_fixed(fp_int *a, fp_int *b){
       );                                                          \
   }
 
+#define fp_notless(a,b) fp_notless_u(a,b,used)
+asm (".macro m_notlessmove a,b, tmp, tmptwo, iter,to ;\n"
+     "movq 8*\\iter(\\a ), \\tmp;\n"
+     "movq 8*\\iter(\\b ), \\tmptwo;\n"
+     "cmovna \\tmp, \\tmptwo;\n"
+     "movq \\tmptwo, 8*\\iter(\\b);\n"
+     ".if \\to-\\iter \n"
+     "m_notlessmove \\a,\\b, \\tmp,\\tmptwo, \"(\\iter + 1)\", \\to \n"
+     ".endif;\n .endm\n");
 template <int used> 
-static int fp_notless_move(fp_int *a, fp_int *b, fp_int *x, fp_int *y){
-  fp_notless(a,b);
-  for(i=0;i<used;i++){
+static int fp_notless_move(fp_int *a, fp_int *b, fp_int *x, fp_int *y);
+
+template <> 
+int fp_notless_move<17>(fp_int *a, fp_int *b, fp_int *x, fp_int *y)
+{
+  fp_notless_u(a,b,17);
+  fp_int temp;
+  register fp_digit tmp,tmp2;
+  asm(" cmp %3,%2; \n" // lt <= gt 
+      "m_notlessmove %1,%0,%4,%5,0,17     ;"
+      :
+      : "r"(x->dp), "r"(y->dp), "r"((unsigned long)lt),"r"((unsigned long)gt) ,"r"(tmp),"r"(tmp2)
+      :  "memory");
+  //if(fp_cmp_mag(a,b) != FP_LT){
+  //    assert(fp_cmp_mag(x,y) == FP_EQ);
+  //  }
+}
+template <> 
+int fp_notless_move<34>(fp_int *a, fp_int *b, fp_int *x, fp_int *y)
+{
+  fp_notless_u(a,b,34);
+  register fp_digit tmp,tmp2;
     asm(" cmp %3,%2;" // lt <= gt 
-        "cmovna %1,%0       ;"
-        : "+r"(x->dp[i]), "+r"(y->dp[i])
-        : "r"((unsigned long)lt),"r"((unsigned long)gt) 
-        : );
-  }
+        "m_notlessmove %1,%0,%4,%5,0,34     ;"
+        :
+        : "r"(x->dp), "r"(y->dp), "r"((unsigned long)lt),"r"((unsigned long)gt) ,"r"(tmp),"r"(tmp2)
+        :  "memory"); 
+
 }
 template <int used> 
 static int fp_notless_setlsb(fp_int *a, fp_int *b, fp_int *x){ 

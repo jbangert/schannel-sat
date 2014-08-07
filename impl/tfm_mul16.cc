@@ -5,8 +5,7 @@
 void fp_mul_comba_16(fp_int *A, fp_int *B, fp_int *C)
 {
    fp_digit c0, c1, c2, at[32];
-   assert(A->used == 16);
-   assert(B->used == 16);
+
       memcpy(at, A->dp, 16 * sizeof(fp_digit));
       memcpy(at+16, B->dp, 16 * sizeof(fp_digit));
       COMBA_START;
