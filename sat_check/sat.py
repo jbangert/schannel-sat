@@ -9,13 +9,21 @@ import json
 from input import Input
 
 import sys
-
-sys.excepthook = ultratb.FormattedTB(mode='Context',
-     color_scheme='Linux', call_pdb=1)
+import traceback
+#sys.excepthook = ultratb.FormattedTB(mode='Context',
+#     color_scheme='Linux', call_pdb=1)
  
-from IPython import embed
+#from IPython import embed
+import ipdb
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
+
+def info(type, value, tb):
+    traceback.print_exception(type, value, tb)
+    print
+    ipdb.pm()
+
+sys.excepthook = info
 
 class UnsupportedException(Exception):
     pass
@@ -85,11 +93,20 @@ class X86Machine:
         self.mem =  Memory(128)
         self.carry = NFree('initialcarry')
         self.uniq = 1
+        self.breakpoints = {}
         for i in self.registernames:
             self.regs[i] = NFree("init_"+self.registernames[i])
             self.regs[X86_REG_RSP] = NValue(self.initsp) # We use a special initial stack value
         for i in range(32):
             self.xmmregs.append(NFree("initxmm_"+str(i),128))
+    def breakpoint(self,addr):
+        self.breakpoints[addr] = True
+    def print_state(self):
+        for x in self.registernames:
+            val = self.readreg(x)
+            if(isinstance(val,NValue)):
+                print self.registernames[x], val.as_long()
+        
     def operandsize(self,i, idx):
         op = i.operands[idx]
         if(op.type == X86_OP_IMM or op.type == X86_OP_MEM):
@@ -123,6 +140,11 @@ class X86Machine:
         operand = i.operands[idx]
         if operand.type == X86_OP_REG:
             if operand.reg in self.registernames:
+                # if operand.reg == X86_REG_R14:
+                #     if isinstance(self.regs[X86_REG_R14], NFree):
+                #         print "Free"
+                #     else:
+                #         print self.regs[X86_REG_R14].as_long()
                 self.regs[operand.reg] = (expr)
             elif operand.reg in self.regs_32:
                 self.regs[self.regs_32[operand.reg]] = expr.zeroext(32)
@@ -202,13 +224,16 @@ class X86Machine:
         self.ip = ip
         while True:
             self.instcount+=1
-            if(self.instcount % 2000 == 0):
-                print self.instcount, " instructions" 
+            if(self.instcount % 10000 == 0):
+                print self.instcount, " instructions" , hex(self.ip + offset)
             if self.ip not in ins:
                 raise UndefinedInstrException()
             i = ins[self.ip]       
             nextip = self.ip + i.size
             m = i.mnemonic
+            
+            if(self.ip + offset in self.breakpoints):
+                ipdb.set_trace()
 #            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - 8
@@ -221,13 +246,13 @@ class X86Machine:
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] + 8
                 break
             elif m == "call":
-                rspval = self.regs[X86_REG_RSP]
                 if(is_test_driver):
                     self.mem.make_free()
-                self.mem.write(rspval, NValue(nextip),64)
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] -8
+                rspval = self.regs[X86_REG_RSP]
+                self.mem.write(rspval, NValue(nextip),64)
                 self.checkfunction(ins,self.readoperand(i,0).as_long(), offset)
-                rspval.assert_equal(self.regs[X86_REG_RSP])
+                rspval.assert_equal(self.regs[X86_REG_RSP] -8 )
                 self.mem.read(rspval,64).assert_equal(NValue(nextip))
             elif m == "jmp":
                 nextip = self.readoperand(i,0)
@@ -385,5 +410,7 @@ class X86Machine:
 symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
 x = Input(sys.argv[1])
 m = X86Machine()
-
+#m.breakpoint(0x406ADE)
+#m.breakpoint(0x406AE8)
+#m.breakpoint(0x4069E4)
 m.checkfunction(x.ins,x.sym['main'], x.offset,True )

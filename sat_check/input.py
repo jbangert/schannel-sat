@@ -1,6 +1,6 @@
 from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import SymbolTableSection
-
+import json
 from capstone_leaky import *
 from capstone_leaky.x86 import *
 class Input:
@@ -26,3 +26,5 @@ class Input:
             if isinstance(s, SymbolTableSection):
                 for sym in s.iter_symbols():
                     self.sym[sym.name] = sym['st_value']  - self.offset
+    def json(self):
+        return json.dumps(self.ins)
