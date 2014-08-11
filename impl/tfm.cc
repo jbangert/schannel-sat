@@ -58,20 +58,20 @@ void s_fp_sub_fixed<17> (fp_int *a, fp_int *b, fp_int *c){
   c->used  = 17;
   register fp_digit tmp;
   asm volatile("clc; \n"
-      "m_subfixedloop %0,%1,%2,%3,0,17; \n"
-      :
-      : "r"(a->dp), "r"(b->dp), "r"(c->dp), "r"(tmp)
+      "m_subfixedloop %1,%2,%3,%0,0,17; \n"
+               : "=&r"(tmp)
+               : "r"(a->dp), "r"(b->dp), "r"(c->dp)
                : "memory");
 }
 template <>
 void s_fp_sub_fixed<34>(fp_int *a, fp_int *b, fp_int *c) {
   c->used  = 34;
   register fp_digit tmp;
-  asm("clc; \n"
-      "m_subfixedloop %0,%1,%2,%3,0,34; \n"
-      :
-      : "r"(a->dp), "r"(b->dp), "r"(c->dp), "r"(tmp)
-      : "memory");
+  asm volatile("clc; \n"
+      "m_subfixedloop %1,%2,%3,%0,0,34; \n"
+               : "=&r"(tmp)
+               : "r"(a->dp), "r"(b->dp), "r"(c->dp)
+               : "memory");
 }
 
 

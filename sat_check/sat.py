@@ -332,7 +332,13 @@ class X86Machine:
             elif m == "xor":
                 a = self.readoperand(i,0)
                 b = self.readoperand(i,1)
-                if(a==b):
+                x = i.operands[0]
+                y = i.operands[1]
+                shortcut = False
+                if(x.type == y.type):
+                    if(x.type == X86_OP_REG):
+                        shortcut = (x.reg == y.reg)
+                if(shortcut):
                     self.resflags(NValue(0))
                     self.writeoperand(i,0, NValue(0, self.operandsize(i,0)))
                 else:
@@ -418,6 +424,7 @@ class X86Machine:
 symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
 x = Input(sys.argv[1])
 m = X86Machine()
+
 #m.breakpoint(0x406ADE)
 #m.breakpoint(0x406AE8)
 #m.breakpoint(0x4069E4)

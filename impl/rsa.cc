@@ -93,18 +93,19 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         assert(used == m->used);
         /* now we need R mod m */
         fp_copy_fixed<used>(&temp,m_mont);
+        //        fp_copy_fixed<used>(&temp1,m_mont);
         fixed_mont_setup(m, &mp);
 
         // fp_montgomery_calc_normalization (&temp, m); //Set used to 16 everywhere!
         /* now set R[0][1] to G * R mod m */
         //        fp_mod(a, m, &temp1);
-
         fp_mod_fixed<used+1>(a,m,&temp1);
         temp1.used = used;        
         temp.used = used;        
         fp_mul_comba_16(&temp1,&temp,&temp1);
         //fp_montgomery_reduce(&temp,m,mp);
         fp_mod_fixed<used+1>(&temp1,m,&temp1);
+
         temp1.used = used;
         //Table[0] = Mont(1) = temp
         //Table[1] = Mont(a) = temp1
@@ -125,24 +126,23 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         buf<<=(fp_digit)TABLE;
         gather<used>(table,y,res);
         for(;;){
-          bitcnt -= TABLE;
-          if(bitcnt==0 ){
-            if(digidx == -1){
-              break;
+          for(bitcnt=0;bitcnt < DIGIT_BIT;bitcnt += TABLE){
+            y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
+            buf <<= (fp_digit)TABLE;
+            for(i=0;i<TABLE;i++){
+              fp_sqr_comba_small16(res,res);    
+              fp_montgomery_reduce(res,m, mp);
+              assert(res->used == 16);
             }
-            buf = b->dp[digidx--];
-            bitcnt = (int) DIGIT_BIT;
-          }  
-          y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
-          buf <<= (fp_digit)TABLE;
-          for(i=0;i<TABLE;i++){
-            fp_sqr_comba_small16(res,res);    
-            fp_montgomery_reduce(res,m, mp);
-            assert(res->used == 16);
+            gather<used>(table,y,&temp);
+            fp_mul_comba_16(res, &temp, res );
+            fp_montgomery_reduce(res,m, mp); 
           }
-          gather<used>(table,y,&temp);
-          fp_mul_comba_16(res, &temp, res );
-          fp_montgomery_reduce(res,m, mp); 
+          
+          if(digidx == -1){
+            break;
+          }
+          buf = b->dp[digidx--];
         }
         fp_montgomery_reduce(res,m,mp);
         return 0;
@@ -150,17 +150,28 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
 
 
 int rsa_crt(fp_int *c, fp_int *p, fp_int *p_mont, fp_int *q, fp_int *q_mont, fp_int *d_p, fp_int *d_q, fp_int *q_inv, fp_int *m){
-        fp_int m1,m2;
-
-        table_sc_exp<16>(c,d_p,p,p_mont,&m1);
-        table_sc_exp<16>(c,d_q,q,q_mont,&m2);
-        fp_sub(&m1,&m2,&m1);
-        fp_mul_comba_16(q_inv,&m1,&m1);
-        //fp_mod(&m1,p,&m1);
-        fp_clean<32>(&m1);
-        fp_mod_fixed<17>(&m1,p,&m1);
-        m1.used = 16;
-        fp_mul_comba_16(q,&m1,&m1);
+  fp_int m1,m2,tmp;
+  table_sc_exp<16>(c,d_p,p,p_mont,&m1);
+  table_sc_exp<16>(c,d_q,q,q_mont,&m2);
+  /* //M1 and M2 are unsigned. calc m1-m2 and m2-m1 unsigned and pick the right one.
+  fp_notless_u(&m2,&m1,16);
+  s_fp_sub_fixed<17>(&m2,&m1,&tmp);
+  s_fp_sub_fixed<17>(&m1,&m2,&m1);
+  fp_notless_move(&m2,&m1,&m1,&tmp);
+  */
+  
+  fp_sub(&m1,&m2,&m1);
+  fp_mul_comba_16(q_inv,&m1,&m1);
+  //fp_mod(&m1,p,&m1);
+  fp_clean<32>(&m1);
+  fp_mod_fixed<17>(&m1,p,&m1);
+  m1.used = 16;
+  fp_mul_comba_16(q,&m1,&m1);
+  /*if(gt>lt){
+  }
+  else{
+  }*/
+    
         fp_add(&m1,&m2,m);
         
 }
