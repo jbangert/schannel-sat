@@ -13,8 +13,13 @@ class Memory:
         a = addr.as_long()
         for i in range(length/8):
             self.mem[a+i] = value.extract(8*i+7,8*i)
-    def read(self,addr,length):
-        try:
+    def _memif(self,slot,baseaddr,i,step,length):
+        if i == 0:
+            # slot == 0
+            return self._read_defined(baseaddr,length)
+        else: 
+            return (slot == NValue(i,slot.size)).If(self._read_defined(baseaddr + i*step,length),self._memif(slot,baseaddr, i - 1,step,length))
+    def _read_defined(self,addr,length):
             a = addr.as_long()
             #        print "r ", a
             if a not in self.mem:
@@ -27,16 +32,19 @@ class Memory:
                     raise UndefinedMemoryError
                 v = self.mem[a+i].concat(v)
             return v
+    def read(self,addr,length):
+        try:
+            return self._read_defined(addr,length)
         except ForkException:
-            print "ForkException caught" 
+#            print "ForkException caught" 
             assert(length == 64) # We can only do 8 bit gather for now, to make the array logic smaller
             cacheline = addr.extract(63,self.cachebits).as_long()
-            slot = addr.extract(self.cachebits,4)
-            align = addr.extract(3,0).as_long()
-            if(align!= NValue(0,3)):
+            slot = addr.extract(self.cachebits,3).simplify()
+            align = addr.extract(2,0).as_long()
+            if(align!=0):
                 raise ForkException
-            raise UnimplementedException 
-            return NFree("foo",length)
+            return self._memif(slot,NValue(cacheline<<self.cachebits,64),(2**self.cachebits)/8 - 1, 8,64)
+
             # Build a huge if on slot 
             
     def make_free(self):

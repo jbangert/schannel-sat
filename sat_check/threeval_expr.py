@@ -3,7 +3,7 @@ import operator
 NOSAT= False
 if not NOSAT:
     from z3 import *
-    set_option(max_args=100, max_lines=100, max_depth=5, max_visited=100)
+    set_option(max_args=100, max_lines=100, max_depth=20, max_visited=100)
 mask = 1<<65-1
 bin = [ '__or__', '__and__', '__xor__', '__lshift__', '__rshift__', '__add__', '__sub__', '__mul__' ]
 cmp = ['__lt__', '__le__', '__eq__', '__ne__', '__ge__', '__gt__']
@@ -29,7 +29,8 @@ if not NOSAT:
 	def as_long(self):
 	    s = Solver()
 	    r = BitVec("result",self.size)
-	    s.add(r== self.v)
+            self.v = simplify(self.v)
+	    s.add(r==self.v)
             print "Solving for", self.v
 	    if(s.check() != sat):
 	        raise ForkException
@@ -42,7 +43,13 @@ if not NOSAT:
 	    
 	def If(self,a,b):
 	    return NFree(If(Extract(0,0,self.v) == 1, a.bv(), b.bv())) 
-	
+        def simplify(self):
+            self.v = simplify(self.v)
+            return self
+        def LshR(self,b):
+            return NFree(LShR(self.v,b.bv()))
+        def LshL(self,b):
+            return NFree(LShL(self.v,b.bv()))
 	def extract(self,a,b):
 	    return NFree(Extract(a,b,self.v), a-b + 1)
 	def concat(self,i):
@@ -83,6 +90,8 @@ else:
 	        return NFree("",self.size + i.size)
 	    def zeroext(self,bits):
 	        return NFree("",self.size + bits)
+            def simplify(self):
+                return self
             def __invert__(self):
                 return NFree("",self.size)
 	    for i in bin:
@@ -121,11 +130,30 @@ class NValue(NUtil):
         return NValue((self.value & (1<< (a + 1)) - 1) >> b, a-b+1)  
     def zeroext(self,bits):
         return NValue(self.value, self.size + bits)
+    def simplify(self):
+        return self
+    def as_free(self):
+        return NFree(self.value, self.size)
+
     def If(self, a,b):
         if((self.value & 1) != 0):
             return a
         else:
             return b
+    def LshR(self,b):
+        if(isinstance(b,NValue)):
+            if(self.value < 0 ):
+                raise MiscError()
+            return NValue(self.value >> b.value, self.size) # TODO: handle correct negative numbers 
+        else: 
+            self.as_free() >> b
+    def LshL(self,b):
+        if(isinstance(b,NValue)):
+            if(self.value < 0 ):
+                raise MiscError()
+            return NValue(self.value << b.value, self.size) # TODO: handle correct negative numbers 
+        else: 
+            self.as_free() >> b
     if not NOSAT:
 	    def concat(self,other):
 	        if(isinstance(other,NValue)):

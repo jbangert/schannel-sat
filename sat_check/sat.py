@@ -255,7 +255,7 @@ class X86Machine:
                 rspval.assert_equal(self.regs[X86_REG_RSP] -8 )
                 self.mem.read(rspval,64).assert_equal(NValue(nextip))
             elif m == "jmp":
-                nextip = self.readoperand(i,0)
+                nextip = self.readoperand(i,0).as_long()
             elif m == "je":
                 if(self.ZF.as_long() != 0):
                     nextip = self.readoperand(i,0).as_long()
@@ -349,8 +349,16 @@ class X86Machine:
             elif m == "shr":
                 a = self.readoperand(i,0)
                 b = self.readoperand(i,1)
-                self.resflags(a>>b)
-                self.writeoperand(i,0, a >> b)           
+                x = a.LshR(b)
+                self.resflags(x)
+                self.writeoperand(i,0, x)   
+            elif m == "shl":
+                a = self.readoperand(i,0)
+                b = self.readoperand(i,1)
+                x = a << b
+                self.resflags(x)
+                self.writeoperand(i,0, x)   
+                
             elif m == "setb":
                 self.writeoperand(i,0, self.carry)
             elif m == "cmovb":
@@ -396,7 +404,7 @@ class X86Machine:
                 self.writeoperand(i,0,self.readoperand(i,1))
        
             elif m == "clc":
-                self.carry = False
+                self.carry = NValue(0,64)
             elif m == "rcl" and  len(i.operands)== 1:
                 x = self.readoperand(i,0) 
                 oldcarry = self.carry

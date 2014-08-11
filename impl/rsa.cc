@@ -71,10 +71,19 @@ void fixed_montgomery_calc_normalization(fp_int *a, fp_int *b)
     }
   }
 }
-
+template <int used>
+void fp_copy_fixed(fp_int *a, fp_int *b)
+{
+  int i;
+  for(i=0;i<used;i++){
+    a->dp[i] = b->dp[i];
+  }
+  a->used = used;
+  a->sign = b->sign;
+}
 template <int used>
 int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
-        fp_digit table[FP_SIZE * (1<<TABLE)];   
+        fp_digit table[FP_SIZE * (1<<TABLE)] __attribute__ ((aligned (128)));   
         fp_int temp, temp1;
 
         fp_int foo_testing;
@@ -83,17 +92,16 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         int montgomery = 0;
         assert(used == m->used);
         /* now we need R mod m */
-        for(i=0;i<used;i++){
-          temp.dp[i] = m_mont->dp[i];
-        }
-        temp.sign = m_mont->sign;
-        fixed_mont_setup (m, &mp);
+        fp_copy_fixed<used>(&temp,m_mont);
+        fixed_mont_setup(m, &mp);
 
         // fp_montgomery_calc_normalization (&temp, m); //Set used to 16 everywhere!
         /* now set R[0][1] to G * R mod m */
         //        fp_mod(a, m, &temp1);
+
         fp_mod_fixed<used+1>(a,m,&temp1);
-        temp1.used = used;          
+        temp1.used = used;        
+        temp.used = used;        
         fp_mul_comba_16(&temp1,&temp,&temp1);
         //fp_montgomery_reduce(&temp,m,mp);
         fp_mod_fixed<used+1>(&temp1,m,&temp1);
@@ -101,8 +109,8 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         //Table[0] = Mont(1) = temp
         //Table[1] = Mont(a) = temp1
         scatter<used>(table,0, &temp);
-        fp_init_copy(&temp, &temp1);
         scatter<used>(table,1, &temp1);
+        fp_copy_fixed<used>(&temp, &temp1);
 
         for(i=2;i<(1<<TABLE); i++){
                 fp_mul_comba_16(&temp,&temp1,&temp);
