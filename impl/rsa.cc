@@ -150,29 +150,28 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
 
 
 int rsa_crt(fp_int *c, fp_int *p, fp_int *p_mont, fp_int *q, fp_int *q_mont, fp_int *d_p, fp_int *d_q, fp_int *q_inv, fp_int *m){
-  fp_int m1,m2,tmp;
+  fp_int m1,m2,temp;
   table_sc_exp<16>(c,d_p,p,p_mont,&m1);
   table_sc_exp<16>(c,d_q,q,q_mont,&m2);
-  /* //M1 and M2 are unsigned. calc m1-m2 and m2-m1 unsigned and pick the right one.
-  fp_notless_u(&m2,&m1,16);
-  s_fp_sub_fixed<17>(&m2,&m1,&tmp);
+  //M1 and M2 are positive. calc m1-m2 and m2-m1 unsigned and pick the right one.
+  fp_notless_u(&m2,&m1,17);
+  s_fp_sub_fixed<17>(&m2,&m1,&temp);
   s_fp_sub_fixed<17>(&m1,&m2,&m1);
-  fp_notless_move(&m2,&m1,&m1,&tmp);
-  */
-  
-  fp_sub(&m1,&m2,&m1);
+  fp_notlessmove_impl(&m1,&temp,17);
+  asm("cmp %2,%1;\n"
+      "cmovna %3,%0;\n"
+      : "=r"(m1.sign)
+      : "r"(lt), "r"(gt), "r"(1)
+      :
+      );
+ 
+  //fp_sub(&m1,&m2,&m1);
   fp_mul_comba_16(q_inv,&m1,&m1);
-  //fp_mod(&m1,p,&m1);
   fp_clean<32>(&m1);
   fp_mod_fixed<17>(&m1,p,&m1);
   m1.used = 16;
   fp_mul_comba_16(q,&m1,&m1);
-  /*if(gt>lt){
-  }
-  else{
-  }*/
-    
-        fp_add(&m1,&m2,m);
+  s_fp_add_fixed<32>(&m1,&m2,m);
         
 }
 /* $Source: /cvs/libtom/tomsfastmath/demo/rsa.c,v $ */

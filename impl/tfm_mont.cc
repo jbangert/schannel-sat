@@ -488,7 +488,7 @@ static int fp_less_fixed(fp_int *a, fp_int *b){
   "cmovb %4, %0;"                                                 \
   "cmova %4, %1;"                                                 \
   : "=r"(lt), "=r"(gt)                                            \
-    : "r"(a->dp[i]), "r"(b->dp[i]), "r"(i+1), "0"(lt), "1"(gt)    \
+      : "r"((a)->dp[i]), "r"((b)->dp[i]), "r"(i+1), "0"(lt), "1"(gt)  \
       :                                                           \
       );                                                          \
   }
@@ -505,32 +505,29 @@ asm (".macro m_notlessmove a,b, tmp, tmptwo, iter,to ;\n"
 template <int used> 
 static int fp_notless_move(fp_int *a, fp_int *b, fp_int *x, fp_int *y);
 
+#define fp_notlessmove_impl(x,y,size)    {                              \
+  register fp_digit tmp,tmp2;                                           \
+  asm(" cmp %3,%2; \n"                                                  \
+  "m_notlessmove %1,%0,%4,%5,0," #size    ";"                           \
+      :                                                                 \
+      : "r"((x)->dp), "r"((y)->dp), "r"((unsigned long)lt),             \
+        "r"((unsigned long)gt) ,"r"(tmp),"r"(tmp2)                      \
+      :  "memory");                                                     \
+  }
+  //if(fp_cmp_mag(a,b) != FP_LT){
+  //    assert(fp_cmp_mag(x,y) == FP_EQ);
+  //  }
 template <> 
 int fp_notless_move<17>(fp_int *a, fp_int *b, fp_int *x, fp_int *y)
 {
   fp_notless_u(a,b,17);
-  fp_int temp;
-  register fp_digit tmp,tmp2;
-  asm(" cmp %3,%2; \n" // lt <= gt 
-      "m_notlessmove %1,%0,%4,%5,0,17     ;"
-      :
-      : "r"(x->dp), "r"(y->dp), "r"((unsigned long)lt),"r"((unsigned long)gt) ,"r"(tmp),"r"(tmp2)
-      :  "memory");
-  //if(fp_cmp_mag(a,b) != FP_LT){
-  //    assert(fp_cmp_mag(x,y) == FP_EQ);
-  //  }
+  fp_notlessmove_impl(x,y,17);
 }
 template <> 
 int fp_notless_move<34>(fp_int *a, fp_int *b, fp_int *x, fp_int *y)
 {
   fp_notless_u(a,b,34);
-  register fp_digit tmp,tmp2;
-    asm(" cmp %3,%2;" // lt <= gt 
-        "m_notlessmove %1,%0,%4,%5,0,34     ;"
-        :
-        : "r"(x->dp), "r"(y->dp), "r"((unsigned long)lt),"r"((unsigned long)gt) ,"r"(tmp),"r"(tmp2)
-        :  "memory"); 
-
+  fp_notlessmove_impl(x,y,34);
 }
 template <int used> 
 static int fp_notless_setlsb(fp_int *a, fp_int *b, fp_int *x){ 
