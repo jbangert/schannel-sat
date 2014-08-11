@@ -90,7 +90,7 @@ class X86Machine:
         self.instcount = 0 
         self.regs = {}
         self.xmmregs = []
-        self.mem =  Memory(128)
+        self.mem =  Memory(7)
         self.carry = NFree('initialcarry')
         self.uniq = 1
         self.breakpoints = {}
