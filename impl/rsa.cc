@@ -1,4 +1,6 @@
+extern "C" {
 #include "tfm.h"
+}
 #include <time.h>
 #include <openssl/bn.h>
 #include <cassert>
@@ -149,7 +151,7 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
 }
 
 
-int rsa_crt(fp_int *c, fp_int *p, fp_int *p_mont, fp_int *q, fp_int *q_mont, fp_int *d_p, fp_int *d_q, fp_int *q_inv, fp_int *m){
+extern "C" int rsa_crt(fp_int *c, fp_int *p, fp_int *p_mont, fp_int *q, fp_int *q_mont, fp_int *d_p, fp_int *d_q, fp_int *q_inv, fp_int *m){
   fp_int m1,m2,temp;
   table_sc_exp<16>(c,d_p,p,p_mont,&m1);
   table_sc_exp<16>(c,d_q,q,q_mont,&m2);

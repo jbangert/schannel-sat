@@ -75,6 +75,8 @@ void s_fp_sub_fixed<34>(fp_int *a, fp_int *b, fp_int *c) {
 }
 
 
+#if 0
+
 /* unsigned addition */
 void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
 {
@@ -127,7 +129,6 @@ void s_fp_sub(fp_int *a, fp_int *b, fp_int *c)
   }
   fp_clamp(c);
 }
-
 void fp_add(fp_int *a, fp_int *b, fp_int *c)
 {
   int     sa, sb;
@@ -370,7 +371,6 @@ void fp_mul_2d(fp_int *a, int b, fp_int *c)
    }
    fp_clamp(c);
 }
-
 /* a/b => cb + d == a */
 int fp_div(fp_int *a, fp_int *b, fp_int *c, fp_int *d)
 {
@@ -566,7 +566,23 @@ void fp_montgomery_calc_normalization(fp_int *a, fp_int *b)
     }
   }
 }
+int fp_print(fp_int *test){
+        char buf[1024];
+        //        test->used = 32;
+        fp_toradix(test,buf,10);
+        printf("%s\n",buf);
+        return 0;
+}
 
+int fp_print_stderr(fp_int *test){
+        char buf[1024];
+        fp_toradix(test,buf,10);
+        fprintf(stderr,"%s\n",buf);
+        return 0;
+}
+
+
+#endif
 
 /* $Source: /cvs/libtom/tomsfastmath/src/mont/fp_montgomery_calc_normalization.c,v $ */
 /* $Revision: 1.1 $ */
@@ -608,21 +624,6 @@ int fp_montgomery_setup(fp_int *a, fp_digit *rho)
 #include "tfm_sqr.cc"
 #include "tfm_mont.cc"
 #include "mydiv.cc"
-int fp_print(fp_int *test){
-        char buf[1024];
-        //        test->used = 32;
-        fp_toradix(test,buf,10);
-        printf("%s\n",buf);
-        return 0;
-}
-
-int fp_print_stderr(fp_int *test){
-        char buf[1024];
-        fp_toradix(test,buf,10);
-        fprintf(stderr,"%s\n",buf);
-        return 0;
-}
-
 /* $Source: /cvs/libtom/tomsfastmath/src/mont/fp_montgomery_setup.c,v $ */
 /* $Revision: 1.1 $ */
 /* $Date: 2006/12/31 21:25:53 $ */
