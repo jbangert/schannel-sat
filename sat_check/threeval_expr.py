@@ -125,7 +125,7 @@ class NValue(NUtil):
     def __invert__(self):
         return NValue(mask ^ self.value)
     def as_long(self):
-        return self.value
+        return self.value & self.mask
     def extract(self,a,b):
         return NValue((self.value & (1<< (a + 1)) - 1) >> b, a-b+1)  
     def zeroext(self,bits):

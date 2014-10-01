@@ -14,3 +14,10 @@
 \#*
 .\#*
 /impl/functionality_test
+/impl/rsa_driver
+/impl/sqr_driver
+/impl/mont_driver
+/impl/mult_driver
+/impl/div_driver
+/impl/exp_driver
+/impl/exp_driver.1

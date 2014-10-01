@@ -234,7 +234,7 @@ class X86Machine:
             
             if(self.ip + offset in self.breakpoints):
                 ipdb.set_trace()
-#            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
+            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - 8
                 self.mem.write(self.regs[X86_REG_RSP], self.readoperand(i,0), i.op_size*8)
