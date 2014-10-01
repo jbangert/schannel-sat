@@ -85,7 +85,7 @@ class X86Machine:
 
 
 
-    initsp = 0x4000
+    initsp = 0x16000
     def __init__(self):
         self.instcount = 0 
         self.regs = {}
