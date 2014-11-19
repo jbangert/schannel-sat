@@ -25,6 +25,7 @@ class input_wrapper:
     def __init__(self, o):
         self.sym = o.sym
         self.offset = o.offset
+        self.rodata =o.rodata
         self.ins = my_dictionary = {k: wrap_inst(v) for k, v in o.ins.iteritems()}
 if __name__ == "__main__":
     from input import Input

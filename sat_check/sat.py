@@ -87,7 +87,7 @@ class X86Machine:
 
 
 
-    initsp = 0x16000
+    initsp = 0xffff0000
     def __init__(self):
         self.instcount = 0 
         self.regs = {}
@@ -132,9 +132,9 @@ class X86Machine:
             else:
                 value = value + NValue(op.scale,64) * self.regs[op.index]
         if(op.base != 0):
-#            if(op.base == X86_REG_RIP):
-#                value = value + self.ip
-#            else:
+            if(op.base == X86_REG_RIP):
+                value = value + self.ip
+            else:
                 value = value + self.regs[op.base]
         return value
     def writeoperand(self,i,idx,expr):
@@ -221,7 +221,9 @@ class X86Machine:
         return self.carry
     def cond_eq(self):
         return self.ZF
-        
+    def load_data_segments(self, input):
+        for k in input.rodata:
+            self.mem.write(NValue(k), NValue(ord(input.rodata[k])),8)
     def checkfunction(self,ins,ip,offset, is_test_driver=False):
         self.ip = ip
         while True:
@@ -430,4 +432,5 @@ if __name__ == "__main__":
     symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
     x = read_process(sys.argv[1]) #input_wrapper(Input(sys.argv[1])) # 
     m = X86Machine()
+    m.load_data_segments(x)
     m.checkfunction(x.ins,x.sym['main'], x.offset,True )
