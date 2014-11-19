@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+from inst_adapter import *
 from threeval_expr import NFree, NValue, ForkException
+import pickle, subprocess,os
 from memory import Memory
 from capstone_leaky import *
 from capstone_leaky.x86 import *
@@ -234,7 +236,7 @@ class X86Machine:
             
             if(self.ip + offset in self.breakpoints):
                 ipdb.set_trace()
-            print hex(self.ip + offset), i.mnemonic, " ", i.op_str
+            # print hex(self.ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - 8
                 self.mem.write(self.regs[X86_REG_RSP], self.readoperand(i,0), i.op_size*8)
@@ -420,12 +422,12 @@ class X86Machine:
                 print "unknown ", m, " ", i.op_str
                 
             self.ip = nextip
-
-symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
-x = Input(sys.argv[1])
-m = X86Machine()
-
-#m.breakpoint(0x406ADE)
-#m.breakpoint(0x406AE8)
-#m.breakpoint(0x4069E4)
-m.checkfunction(x.ins,x.sym['main'], x.offset,True )
+def read_process(filename):
+    ex = os.path.dirname(os.path.realpath(__file__))+ "/inst_adapter.py"
+    json = subprocess.check_output([ex, filename])
+    return pickle.loads(json)
+if __name__ == "__main__":
+    symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
+    x = read_process(sys.argv[1]) #input_wrapper(Input(sys.argv[1])) # 
+    m = X86Machine()
+    m.checkfunction(x.ins,x.sym['main'], x.offset,True )

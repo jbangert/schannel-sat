@@ -1,6 +1,6 @@
 from threeval_expr import NFree, NValue, ForkException
 
-import ipdb
+#import ipdb
 class UndefinedMemoryError(Exception):
     pass
 DEBUG=0
