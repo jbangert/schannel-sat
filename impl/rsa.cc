@@ -116,8 +116,9 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         fp_copy_fixed<used>(&temp, &temp1);
 
         for(i=2;i<(1<<TABLE); i++){
-                fp_mul_comba_16(&temp,&temp1,&temp);
-                fp_montgomery_reduce(&temp, m, mp);
+          fp_mulmont(&temp, &temp1, m, &temp, mp);
+          //                fp_mul_comba_16(&temp,&temp1,&temp);
+          //                fp_montgomery_reduce(&temp, m, mp);
                 scatter<used>(table,i,&temp);
         }
         digidx= used;
@@ -132,9 +133,10 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
             y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
             buf <<= (fp_digit)TABLE;
             for(i=0;i<TABLE;i++){
+              //fp_mulmont(res,res,m, res,mp);
               fp_sqr_comba_small16(res,res);    
               fp_montgomery_reduce(res,m, mp);
-              assert(res->used == 16);
+              //assert(res->used == 16);
             }
             gather<used>(table,y,&temp);
             fp_mulmont(res,&temp, m,res,mp);

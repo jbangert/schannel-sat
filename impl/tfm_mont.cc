@@ -555,12 +555,12 @@ void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   fp_digit q;
   int i,j;
   assert(a->dp[0]!=0);
-  fp_mul_comba_16(a, b, &real );
-  fp_montgomery_reduce(&real,m, mp);
+  //  fp_mul_comba_16(a, b, &real );
+  //  fp_montgomery_reduce(&real,m, mp);
   memset(&d,0,sizeof d);
   memset(&e,0,sizeof e);
   mp = -mp;
-  fp_mul_d(m,mp,&temp);
+  //  fp_mul_d(m,mp,&temp);
   
   //  printf("a=0x"); fp_print(a);
   //  printf("b=0x"); fp_print(b);
