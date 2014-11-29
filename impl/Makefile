@@ -1,4 +1,4 @@
-CXXFLAGS= -I. -ggdb3  -Wno-write-strings  -O3  -DNDEBUG  
+CXXFLAGS= -I. -ggdb3  -Wno-write-strings # -O3  -DNDEBUG  
 TFMDIR=../tomsfastmath-0.12/src
 BINARIES= functionality_test mult_driver sqr_driver mont_driver div_driver exp_driver  rsa_driver mult_bench
 ACCESSORY= $(TFMDIR)/../libtfm.a #$(TFMDIR)/bin/*.c $(TFMDIR)/bit/*.c $(TFMDIR)/addsub/fp_*.c $(TFMDIR)/mul/fp_mul*.c $(TFMDIR)/misc/fp_set.c $(TFMDIR)/divide/fp_div_d.c $(TFMDIR)/mont/fp_montgomery_calc_normalization.c

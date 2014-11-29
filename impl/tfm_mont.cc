@@ -598,22 +598,25 @@ void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
     //    printf("d ="); fp_print(&d);
     //    printf("e ="); fp_print(&e);
   }
- 
-  fp_sub(&d,&e,c);
-  if(c->sign)
-    fp_add(c,m,c);
-  /*
-  if(fp_cmp_mag(&e,&d) == FP_GT){
-    s_fp_sub(m, &e, c);
-    s_fp_add(c, &d, c);
+  {
+    fp_notless_u(&e,&d,16);
+    s_fp_sub_fixed2<16>(&d,&e,c);
+    s_fp_sub_fixed2<16>(m, &e,&temp);
+    s_fp_add_fixed<16>(&temp, &d,&temp);
+    //fp_notlessmove_impl(c,&temp,16);
+     if(fp_cmp_mag(&e,&d) == FP_GT){
+      c->sign=0;
+      s_fp_sub_fixed2<16>(m, &e,&temp);
+      //s_fp_add_fixed<16>(&temp, &d,c);
+      s_fp_add_fixed<16>(&temp, &d,c);
+      //printf("%d\n", temp.used);
+      //    memcpy(c,&temp, sizeof temp);
+      //*c = temp;
+      //fp_copy(&temp,c);
+     } 
   }
-  else 
-  s_fp_sub(&d,&e,c);*/
-  c->used = 16;
   //   printf("real=");fp_print(&real);
   //   printf("got =");fp_print(c);
-
-
   
 }
 /* computes x/R == x (mod N) via Montgomery Reduction */

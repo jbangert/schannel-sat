@@ -54,6 +54,16 @@ asm (".macro m_subfixedloop a,b,c,tmp,iter,to ;\n"
 template <int used>
 void s_fp_sub_fixed(fp_int *a, fp_int *b, fp_int *c);
 template <>
+void s_fp_sub_fixed<16> (fp_int *a, fp_int *b, fp_int *c){
+  c->used  = 16;
+  register fp_digit tmp;
+  asm volatile("clc; \n"
+      "m_subfixedloop %1,%2,%3,%0,0,16; \n"
+               : "=&r"(tmp)
+               : "r"(a->dp), "r"(b->dp), "r"(c->dp)
+               : "memory");
+}
+template <>
 void s_fp_sub_fixed<17> (fp_int *a, fp_int *b, fp_int *c){
   c->used  = 17;
   register fp_digit tmp;
