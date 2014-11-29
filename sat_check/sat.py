@@ -26,7 +26,7 @@ def info(type, value, tb):
     ipdb.pm()
 
 sys.excepthook = info
-
+debug = 'DEBUG' in os.environ
 class UnsupportedException(Exception):
     pass
 class UndefinedExpression(Exception):
@@ -238,7 +238,8 @@ class X86Machine:
             
             if(self.ip + offset in self.breakpoints):
                 ipdb.set_trace()
-            # print hex(self.ip + offset), i.mnemonic, " ", i.op_str
+            if debug:
+                print hex(self.ip + offset), i.mnemonic, " ", i.op_str
             if m == "push":
                 self.regs[X86_REG_RSP] = self.regs[X86_REG_RSP] - 8
                 self.mem.write(self.regs[X86_REG_RSP], self.readoperand(i,0), i.op_size*8)
@@ -277,6 +278,7 @@ class X86Machine:
                 a = self.readoperand(i,0)
                 b = self.readoperand(i,1)
                 c = a & b
+                self.resflags(c)
             elif m == "cmp":
                 a = self.readoperand(i,0)
                 b = self.readoperand(i,1)
@@ -370,7 +372,8 @@ class X86Machine:
                 self.writeoperand(i,0, x)   
                 
             elif m == "setb":
-                self.writeoperand(i,0, self.carry)
+                # XXX: ignore operand size?
+                self.writeoperand(i,0, self.carry.If(NValue(1,8), NValue(0,8)))
             elif m == "cmovb":
                 a = self.readoperand(i,0)
                 b = self.readoperand(i,1)
@@ -432,5 +435,8 @@ if __name__ == "__main__":
     symbol = "_Z15fp_mul_comba_16P6fp_intS0_S0_"
     x = read_process(sys.argv[1]) #input_wrapper(Input(sys.argv[1])) # 
     m = X86Machine()
+    if debug:
+        for z in os.environ['DEBUG'].split():
+            m.breakpoint(int(z,0))
     m.load_data_segments(x)
     m.checkfunction(x.ins,x.sym['main'], x.offset,True )

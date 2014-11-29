@@ -137,8 +137,9 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
               assert(res->used == 16);
             }
             gather<used>(table,y,&temp);
-            fp_mul_comba_16(res, &temp, res );
-            fp_montgomery_reduce(res,m, mp); 
+            fp_mulmont(res,&temp, m,res,mp);
+            //fp_mul_comba_16(res, &temp, res );
+            //fp_montgomery_reduce(res,m, mp); 
           }
           
           if(digidx == -1){

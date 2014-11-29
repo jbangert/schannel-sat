@@ -18,20 +18,27 @@ def modinv(a, m):
 
 def byte(a,word):
     return (a>>(word*64)) & MASK
+def decompose(a):
+    return [byte(a,i) for i in range(32)]
+def compose(a):
+    x=0
+    for i in range(32):
+        x+= a[i] << 64*i
+    return x
 def decompose_test(a):
     x = 0
-    print math.log(a,2)
     assert byte(a,31) == 0
-    for i in reversed(range(2048/64)):
-        x= x| (byte(a,i) << i*64)
-    assert (x==a)
+    compose(decompose(a)) == a
 decompose_test(1)
 def mulmont(a,b,m,mp):
     c=0
+    pmp = mp
     mp = -modinv(m,2**64) % 2**64
-    print "mp =", mp
-    print "modulo = ",mp*m % 2**64
-    print "modulo = ",mp*-m % 2**64
+
+    print "m=", hex(m)
+    print "mp =", hex(mp)
+#    print "modulo = ",mp*m % 2**64
+#    print "modulo = ",mp*-m % 2**64
     decompose_test(a)
     for i in range(2048/64):
         c = (c+ byte(a,i) * b) & BIGMASK
@@ -42,9 +49,36 @@ def mulmont(a,b,m,mp):
     if(c>=m):
         c = c-m
     return c
-
-
+def mulmont2(a,b,m,mp):
+    mp = modinv(m,2**64) % 2**64
+    a= decompose(a)
+    b= decompose(b)
+    m= decompose(m)
+    d = [0] * 32
+    e = [0] * 32
     
+    
+    for j in range(32):
+        q = (mp * b[0] * a[j] + mp * (d[0] - e[0])) & MASK
+        t0 = a[j] * b[0] + d[0]
+        t0 = t0>>64
+        t1 = q * m[0] + e[0]
+        t1 = t1>>64
+        for i in range(1,32):
+            p0 = a[j] * b[i] + t0 + d[i]
+            p1 = q * m[i] + t1 + e[i]
+            t0 = p0 >> 64
+            t1 = p1 >> 64
+            d[i-1] = p0 & MASK
+            e[i-1] = p1 & MASK
+        e[31] = t1
+    d = compose(d)
+    e = compose(e)
+    m = compose(m)
+    c = d-e
+    if(c<0):
+        c = c+m
+    return c
 def mulmod(a,b,m):
     return (a*b)%m
 a=0x37D1C2A33BF3CEE869045D92DC7591CC1734ADBF6A9054AEBDE32D3DD516727A99B3DA37BDD087D4FC1844A19AB4BEE39C5762DA484221B736E18887895D442A2F3504EA5CD492CD42E87B6F5F683192AE72109B35B76B2D7B20A207AA33760C39CC0D5BBEBA8D89E08DA17341BCCC96B87FFEE9CEEBE9F2B40472DD516A4EB5
@@ -53,14 +87,42 @@ m=0xF6DCB8A197DD9E96880F824A9A0839F8AC628460D9CDC2F49600A67D97784A76E3636AF460B4
 multiply_out=0x1
 mp=0xBE5DC2C3
 
+def num_to_mont(a,m,mp):
+    val =   (a * (2**2048 % m)) % m
+    v2 = mulmont(a, 2**4096 % m, m,mp)
+    
+#    v2 = a
+#    print "vx=", ((v2*mp) & BIGMASK) *m
+#    v2 = (v2+ ((v2*mp) & BIGMASK)*m)>>2048
+    
+    assert val == v2
+    return val
+def mont_red(T,N,mp):
+    g,rp,np = egcd(2**2048, N)
+    np = -np
+    print "mont_normalization=",np
+
+    assert rp * (2**2048) - np *N == 1
+    #np =  modinv(N,2**64) % 2**64
+    m = (T * np) & BIGMASK
+    t = (T+m*N) / 2**2048
+    if t>=N:
+        return t-N
+    else:
+        return t
+
 #print mulmont(a,b,m,mp) >= m
-a = 3
-b = 9
-m = 21
-mm = mulmont(a,b,m,mp)
-mm = mm * (2**2048 % m ) % m
+#a = 3
+#b = 9
+#m = 19
+assert mont_red(num_to_mont(a,m,mp),m,mp) - a == 0
+mm = mulmont2(num_to_mont(a,m,mp),num_to_mont(b,m,mp),m,mp)
+mm = mont_red(mm,m,mp)
+#mm= mont_red(mm,a,mp)
+#mm = num_to_mont(mm,m,mp)
 print "got =", mm
 real  = mulmod(a,b,m)
+#real = mulmod(a,b,m)
 print "real=", real
 
 assert mm == real

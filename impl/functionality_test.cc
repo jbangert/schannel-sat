@@ -12,7 +12,6 @@ int exp_test(void) {
    fp_read_radix(&c, "9ff70ea6968a04530e6b06bf01aa937209cc8450e76ac19477743de996ba3fb445923c947f8d0add8c57efa51d15485309918459da6c1e5a97f215193b797dce98db51bdb4639c2ecfa90ebb051e3a2daeffd27a7d6e62043703a7b15e0ada5170427b63099cd01ef52cd92d8723e5774bea32716aaa7f5adbae817fb12a5b50", 16);
 
    fp_montgomery_calc_normalization(&mont,&n);
-   
    /* test it */
    table_sc_exp<16>(&m, &e, &n,&mont, &e_m);
    if (fp_cmp(&e_m, &c)) {

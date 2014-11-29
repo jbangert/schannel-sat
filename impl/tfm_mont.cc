@@ -542,6 +542,53 @@ static int fp_notless_setlsb(fp_int *a, fp_int *b, fp_int *x){
       : );
 }
 
+int fp_print(fp_int *test){
+        char buf[2048];
+        //test->used = 32;
+        fp_toradix(test,buf,16);
+        printf("%s\n",buf);
+        return 0;
+}
+void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
+  fp_int temp,out;
+  int i,j;
+  memset(&out,0,sizeof out);
+  mp = -mp;
+  fp_mul_d(m,0xd566c1f9be5dc2c3,&temp);
+  
+  //  printf("a=0x"); fp_print(a);
+  //  printf("b=0x"); fp_print(b);
+  printf("m*mp=0x"); fp_print(&temp);
+  printf("m=0x"); fp_print(m);
+  temp.used = 1;
+  assert(temp.dp[0] == 1);
+  //  printf("multiply_out=0x"); fp_print(&temp);
+  printf("mp=0x%X\n",mp);
+  
+  
+  const int pa = 16;
+  for (i=0;i<pa;i++){
+    fp_mul_d(b,a->dp[i],&temp); // temp = a[i] * b
+    s_fp_add(&out,&temp,&out);        // &out = &out+a[i]*b
+    fp_digit q = out.dp[0] * -mp;
+    fp_mul_d(m,q,&temp);
+    s_fp_add(&out,&temp,&out);
+    fp_rshd(&out,1);
+  }
+  
+  if (fp_cmp_mag (c, m) != FP_LT) {
+      s_fp_sub (c, m, &out);
+  } else{
+    fp_copy(&out,c);
+  }
+  fp_mul_comba_16(a, b, &temp );
+  fp_montgomery_reduce(&temp,m, mp); 
+  
+  //  printf("temp=");fp_print(&temp);
+  //  printf("c=");fp_print(c);
+
+  
+}
 /* computes x/R == x (mod N) via Montgomery Reduction */
 void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
 {
