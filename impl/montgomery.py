@@ -1,8 +1,8 @@
 #!/usr/bin/python2
 import math
 MASK = 0xFFFFFFFFFFFFFFFF
-SIZE = 2048
-WORDS= SIZE/64
+SIZE = 1024 #+ 64
+WORDS= SIZE/64 
 BIGMASK = 2**SIZE - 1
 
 def egcd(a, b):
@@ -43,7 +43,7 @@ def mulmont(a,b,m,mp):
 #    print "modulo = ",mp*m % 2**64
 #    print "modulo = ",mp*-m % 2**64
     decompose_test(a)
-    for i in range(SIZE/64):
+    for i in range(WORDS):
         c = (c+ byte(a,i) * b) & BIGMASK
        # q_2 = (mp * c) & MASK
         q = (mp * byte(c,0)) & MASK
@@ -73,7 +73,8 @@ def mulmont2(a,b,m,mp):
             t1 = p1 >> 64
             d[i-1] = p0 & MASK
             e[i-1] = p1 & MASK
-        e[31] = t1
+        d[WORDS-1] = t0
+        e[WORDS-1] = t1
     d = compose(d)
     e = compose(e)
     m = compose(m)

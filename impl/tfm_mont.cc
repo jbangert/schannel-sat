@@ -550,42 +550,65 @@ int fp_print(fp_int *test){
         return 0;
 }
 void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
-  fp_int temp,out;
+  fp_int real;
+  fp_int temp,d,e;
+  fp_digit q;
   int i,j;
-  memset(&out,0,sizeof out);
+  assert(a->dp[0]!=0);
+  fp_mul_comba_16(a, b, &real );
+  fp_montgomery_reduce(&real,m, mp);
+  memset(&d,0,sizeof d);
+  memset(&e,0,sizeof e);
   mp = -mp;
-  fp_mul_d(m,0xd566c1f9be5dc2c3,&temp);
+  fp_mul_d(m,mp,&temp);
   
-  //  printf("a=0x"); fp_print(a);
-  //  printf("b=0x"); fp_print(b);
+  printf("a=0x"); fp_print(a);
+  printf("b=0x"); fp_print(b);
   printf("m*mp=0x"); fp_print(&temp);
   printf("m=0x"); fp_print(m);
   temp.used = 1;
   assert(temp.dp[0] == 1);
   //  printf("multiply_out=0x"); fp_print(&temp);
-  printf("mp=0x%X\n",mp);
+  printf("mp=0x%lX\n",mp);
+  
   
   
   const int pa = 16;
-  for (i=0;i<pa;i++){
-    fp_mul_d(b,a->dp[i],&temp); // temp = a[i] * b
-    s_fp_add(&out,&temp,&out);        // &out = &out+a[i]*b
-    fp_digit q = out.dp[0] * -mp;
-    fp_mul_d(m,q,&temp);
-    s_fp_add(&out,&temp,&out);
-    fp_rshd(&out,1);
+  for (j=0;j<pa;j++){
+    fp_word t0,t1;
+    q = mp * b->dp[0] * a->dp[j] + mp*(d.dp[0] - e.dp[0]);
+    t0 = a->dp[j] * b->dp[0] + d.dp[0];
+    t0>>=64;
+    t1 = q * m->dp[0] + e.dp[0];
+    t1>>=64;
+    for(i=1;i<pa;i++){
+      fp_word p0,p1;
+      p0=  p0 = a->dp[j] * b->dp[i] + t0 + d.dp[i];
+      p1 = q * m->dp[i] + t1 + e.dp[i];
+      t0 = p0 >> 64;
+      t1 = p1 >> 64;
+      d.dp[i-1] = p0;
+      e.dp[i-1] = p1 ;
+    }
+    d.dp[pa-1] = t0;
+    e.dp[pa-1] = t1;
   }
-  
-  if (fp_cmp_mag (c, m) != FP_LT) {
-      s_fp_sub (c, m, &out);
-  } else{
-    fp_copy(&out,c);
+ 
+  d.used = e.used = pa;
+  fp_sub(&d,&e,c);
+  if(c->sign)
+    fp_add(c,m,c);
+  /*
+  if(fp_cmp_mag(&e,&d) == FP_GT){
+    s_fp_sub(m, &e, c);
+    s_fp_add(c, &d, c);
   }
-  fp_mul_comba_16(a, b, &temp );
-  fp_montgomery_reduce(&temp,m, mp); 
-  
-  //  printf("temp=");fp_print(&temp);
-  //  printf("c=");fp_print(c);
+  else 
+  s_fp_sub(&d,&e,c);*/
+  c->used = 16;
+   printf("real=");fp_print(&real);
+   printf("got =");fp_print(c);
+
 
   
 }
