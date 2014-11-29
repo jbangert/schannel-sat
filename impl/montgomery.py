@@ -1,7 +1,10 @@
 #!/usr/bin/python2
 import math
 MASK = 0xFFFFFFFFFFFFFFFF
-BIGMASK = 2**2048 - 1
+SIZE = 2048
+WORDS= SIZE/64
+BIGMASK = 2**SIZE - 1
+
 def egcd(a, b):
     if a == 0:
         return (b, 0, 1)
@@ -19,10 +22,10 @@ def modinv(a, m):
 def byte(a,word):
     return (a>>(word*64)) & MASK
 def decompose(a):
-    return [byte(a,i) for i in range(32)]
+    return [byte(a,i) for i in range(WORDS)]
 def compose(a):
     x=0
-    for i in range(32):
+    for i in range(WORDS):
         x+= a[i] << 64*i
     return x
 def decompose_test(a):
@@ -40,7 +43,7 @@ def mulmont(a,b,m,mp):
 #    print "modulo = ",mp*m % 2**64
 #    print "modulo = ",mp*-m % 2**64
     decompose_test(a)
-    for i in range(2048/64):
+    for i in range(SIZE/64):
         c = (c+ byte(a,i) * b) & BIGMASK
        # q_2 = (mp * c) & MASK
         q = (mp * byte(c,0)) & MASK
@@ -50,21 +53,20 @@ def mulmont(a,b,m,mp):
         c = c-m
     return c
 def mulmont2(a,b,m,mp):
-    mp = modinv(m,2**64) % 2**64
     a= decompose(a)
     b= decompose(b)
+    mp = modinv(m,2**64) % 2**64
     m= decompose(m)
-    d = [0] * 32
-    e = [0] * 32
+    d = [0] * WORDS
+    e = [0] * WORDS
     
-    
-    for j in range(32):
+    for j in range(WORDS):
         q = (mp * b[0] * a[j] + mp * (d[0] - e[0])) & MASK
         t0 = a[j] * b[0] + d[0]
         t0 = t0>>64
         t1 = q * m[0] + e[0]
         t1 = t1>>64
-        for i in range(1,32):
+        for i in range(1,WORDS):
             p0 = a[j] * b[i] + t0 + d[i]
             p1 = q * m[i] + t1 + e[i]
             t0 = p0 >> 64
@@ -88,24 +90,24 @@ multiply_out=0x1
 mp=0xBE5DC2C3
 
 def num_to_mont(a,m,mp):
-    val =   (a * (2**2048 % m)) % m
-    v2 = mulmont(a, 2**4096 % m, m,mp)
+    val =   (a * (2**SIZE % m)) % m
+    v2 = mulmont2(a, 2**(2*SIZE) % m, m,mp)
     
 #    v2 = a
 #    print "vx=", ((v2*mp) & BIGMASK) *m
-#    v2 = (v2+ ((v2*mp) & BIGMASK)*m)>>2048
+#    v2 = (v2+ ((v2*mp) & BIGMASK)*m)>>SIZE
     
     assert val == v2
     return val
 def mont_red(T,N,mp):
-    g,rp,np = egcd(2**2048, N)
+    g,rp,np = egcd(2**SIZE, N)
     np = -np
     print "mont_normalization=",np
 
-    assert rp * (2**2048) - np *N == 1
+    assert rp * (2**SIZE) - np *N == 1
     #np =  modinv(N,2**64) % 2**64
     m = (T * np) & BIGMASK
-    t = (T+m*N) / 2**2048
+    t = (T+m*N) / 2**SIZE
     if t>=N:
         return t-N
     else:
