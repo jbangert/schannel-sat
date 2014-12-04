@@ -620,21 +620,9 @@ void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   {
     fp_notless_u(&e,&d,16);
     s_fp_sub_fixed2<16>(&d,&e,c);
-    // s_fp_sub_fixed2<16>(m, &e,&temp);
-    // s_fp_add_fixed<16>(&temp, &d,&temp);
-    //fp_notlessmove_impl(c,&temp,16);
-     if(fp_cmp_mag(&e,&d) == FP_GT){
-      c->sign=0;
-      s_fp_sub(m,&e,&temp);
-      s_fp_add(&temp, &d, c);
-      //s_fp_sub_fixed2<16>(m, &e,&temp);
-      //s_fp_add_fixed<16>(&temp, &d,c);
-      //s_fp_add_fixed<16>(&temp, &d,c);
-      //printf("%d\n", temp.used);
-      //    memcpy(c,&temp, sizeof temp);
-      //*c = temp;
-      //fp_copy(&temp,c);
-     } 
+    s_fp_sub_fixed2<16>(m, &e,&temp);
+     s_fp_add_fixed<16>(&temp, &d,&real);
+    fp_notlessmove_impl(c,&real,16);
   }
    
   //  printf("real=");fp_print(&real);
