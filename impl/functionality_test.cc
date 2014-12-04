@@ -23,14 +23,14 @@ int exp_test(void) {
    }
    printf("CLOCKS_PER_SEC = %llu\n", (unsigned long long)CLOCKS_PER_SEC);
    t1 = clock();
-   for (x = 0; x < 1000; x++) {
+   for (x = 0; x < 100; x++) {
      //fp_exptmod(&m, &e, &n, &e_m);
      table_sc_exp<16>(&m, &e, &n, &mont, &e_m);
    }
    t1 = clock() - t1;
    printf("RSA-1024\n");
-   printf("1000 RSA operations took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
-   printf("RSA encrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 1000.0) );
+   printf("100 RSA operations took     %10.5g seconds\n", (double)t1 / (double)CLOCKS_PER_SEC);
+   printf("RSA encrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 / 100.0) );
 
    /* read in the parameters */
    fp_read_radix(&n, "a7f30e2e04d31acc6936916af1e404a4007adfb9e97864de28d1c7ba3034633bee2cd9d5da3ea3cdcdc9a6f3daf5702ef750f4c3aadb0e27410ac04532176795995148cdb4691bd09a8a846e3e24e073ce2f89b34dfeb2ee89b646923ca60ee3f73c4d5397478380425e7260f75dfdc54826e160395b0889b1162cf115a9773f", 16);
@@ -88,7 +88,7 @@ int crt_test(void ){
         }
 
         clock_t t1;
-        const int count = 1000;
+        const int count = 500;
         t1 = clock();
         for (x = 0; x < count; x++) {
                 rsa_crt(&c,&p,&mont_p,&q,&mont_q,&d_p,&d_q,&q_inv,&e_m);

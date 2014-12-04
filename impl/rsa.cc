@@ -97,7 +97,7 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         fp_copy_fixed<used>(&temp,m_mont);
         //        fp_copy_fixed<used>(&temp1,m_mont);
         fixed_mont_setup(m, &mp);
-
+        memset(res,0,sizeof(fp_int));
         // fp_montgomery_calc_normalization (&temp, m); //Set used to 16 everywhere!
         /* now set R[0][1] to G * R mod m */
         //        fp_mod(a, m, &temp1);
@@ -105,7 +105,6 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         temp1.used = used;        
         temp.used = used;        
         fp_mul_comba_16(&temp1,&temp,&temp1);
-        //fp_montgomery_reduce(&temp,m,mp);
         fp_mod_fixed<used+1>(&temp1,m,&temp1);
 
         temp1.used = used;
@@ -119,7 +118,7 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
           fp_mulmont(&temp, &temp1, m, &temp, mp);
           //                fp_mul_comba_16(&temp,&temp1,&temp);
           //                fp_montgomery_reduce(&temp, m, mp);
-                scatter<used>(table,i,&temp);
+          scatter<used>(table,i,&temp);
         }
         digidx= used;
         buf=b->dp[digidx--];
@@ -133,10 +132,10 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
             y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
             buf <<= (fp_digit)TABLE;
             for(i=0;i<TABLE;i++){
-              //fp_mulmont(res,res,m, res,mp);
-              fp_sqr_comba_small16(res,res);    
-              fp_montgomery_reduce(res,m, mp);
-              //assert(res->used == 16);
+              fp_mulmont(res,res,m, res,mp);
+              //             fp_sqr_comba_small16(res,res);    
+              //             fp_montgomery_reduce(res,m, mp);
+                      assert(res->used == 16);
             }
             gather<used>(table,y,&temp);
             fp_mulmont(res,&temp, m,res,mp);

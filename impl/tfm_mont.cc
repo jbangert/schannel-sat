@@ -549,39 +549,57 @@ int fp_print(fp_int *test){
         printf("%s\n",buf);
         return 0;
 }
+/*
+void fp_mulmont2(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
+  int i =0;
+  fp_int d,e;
+  fp_digit *adp,*bdp,q;
+  memset(&d,0,sizeof d);
+  memset(&e,0,sizeof e);
+  mp = -mp;
+  const int pa = 16;
+  adp = a->dp;
+  for(i=0;i<pa;i++){
+    q = mp * b->dp[0] * a->dp[j] + mp*(d.dp[0] - e.dp[0]);
+    
+  }
+} */
+#ifndef NDEBUG
+#define DBG(x) x;
+#define DBG(X) ;
+#else
+#define DBG(x) ;
+#endif
 void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   fp_int real;
   fp_int temp,d,e;
   fp_digit q;
   int i,j;
-  assert(a->dp[0]!=0);
-  //  fp_mul_comba_16(a, b, &real );
-  //  fp_montgomery_reduce(&real,m, mp);
+
   memset(&d,0,sizeof d);
   memset(&e,0,sizeof e);
+  //  memset(&temp,0,sizeof temp);
   mp = -mp;
   //  fp_mul_d(m,mp,&temp);
   
-  //  printf("a=0x"); fp_print(a);
-  //  printf("b=0x"); fp_print(b);
-  //  printf("m=0x"); fp_print(m);
-  //  printf("multiply_out=0x"); fp_print(&temp);
-  //  printf("mp=0x%lX\n",mp);
+  DBG(printf("a=0x"); fp_print(a));
+  DBG( printf("b=0x"); fp_print(b));
+  // printf("m=0x"); fp_print(m);
+  //printf("multiply_out=0x"); fp_print(&temp);
+  //   printf("mp=0x%lX\n",mp);
   
   const int pa = 16;
   d.used = e.used = pa;
   for (j=0;j<pa;j++){
     fp_word t0,t1;
-    
     q = mp * b->dp[0] * a->dp[j] + mp*(d.dp[0] - e.dp[0]);
-    //    printf("q = %lu\n", q);
-    //    printf("aj = %lu\n", a->dp[j]);
-    //    printf("b0 = %lu\n", b->dp[0]);
-    //    printf("d0 = %lu\n", d.dp[0]);
+    DBG(printf("q = %lu\n", q));
+    DBG(printf("aj = %lu\n", a->dp[j]));
+    DBG(printf("b0 = %lu\n", b->dp[0]));
+    DBG(printf("d0 = %lu\n", d.dp[0]));
     t0 = (fp_word)a->dp[j]*(fp_word) b->dp[0] + (fp_word)d.dp[0];
     //    printf("t0= %lX_%lX\n", t0>>64, t0);
     t0>>=64;
-
     t1 = (fp_word)q * m->dp[0] + e.dp[0];
     t1>>=64;
     for(i=1;i<pa;i++){
@@ -595,28 +613,32 @@ void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
     }
     d.dp[pa-1] = t0;
     e.dp[pa-1] = t1;
-    //    printf("d ="); fp_print(&d);
-    //    printf("e ="); fp_print(&e);
+    
+    //printf("d ="); fp_print(&d);
+    //printf("e ="); fp_print(&e);
   }
   {
     fp_notless_u(&e,&d,16);
     s_fp_sub_fixed2<16>(&d,&e,c);
-    s_fp_sub_fixed2<16>(m, &e,&temp);
-    s_fp_add_fixed<16>(&temp, &d,&temp);
+    // s_fp_sub_fixed2<16>(m, &e,&temp);
+    // s_fp_add_fixed<16>(&temp, &d,&temp);
     //fp_notlessmove_impl(c,&temp,16);
      if(fp_cmp_mag(&e,&d) == FP_GT){
       c->sign=0;
-      s_fp_sub_fixed2<16>(m, &e,&temp);
+      s_fp_sub(m,&e,&temp);
+      s_fp_add(&temp, &d, c);
+      //s_fp_sub_fixed2<16>(m, &e,&temp);
       //s_fp_add_fixed<16>(&temp, &d,c);
-      s_fp_add_fixed<16>(&temp, &d,c);
+      //s_fp_add_fixed<16>(&temp, &d,c);
       //printf("%d\n", temp.used);
       //    memcpy(c,&temp, sizeof temp);
       //*c = temp;
       //fp_copy(&temp,c);
      } 
   }
-  //   printf("real=");fp_print(&real);
-  //   printf("got =");fp_print(c);
+   
+  //  printf("real=");fp_print(&real);
+  //  printf("got =");fp_print(c);
   
 }
 /* computes x/R == x (mod N) via Montgomery Reduction */
