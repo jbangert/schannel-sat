@@ -148,7 +148,7 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
           }
           buf = b->dp[digidx--];
         }
-        fp_montgomery_reduce(res,m,mp);
+        fp_montreduce_fixed(res,m,mp);
         return 0;
 }
 

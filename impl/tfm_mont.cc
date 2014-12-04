@@ -629,6 +629,13 @@ void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   //  printf("got =");fp_print(c);
   
 }
+void fp_montreduce_fixed(fp_int *a, fp_int *m, fp_digit mp){
+  fp_int temp;
+  memset(&temp,0,sizeof temp);
+  temp.used = 16;
+  temp.dp[0]= 1;
+  fp_mulmont(a,&temp,m,a,mp);
+}
 /* computes x/R == x (mod N) via Montgomery Reduction */
 void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
 {
