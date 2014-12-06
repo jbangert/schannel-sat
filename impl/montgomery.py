@@ -69,9 +69,11 @@ def mulmont2(a,b,m,mp):
         print "a0 =", a[0]
         q = (mp * b[0] * a[j] + mp * (d[0] - e[0])) & MASK
         print "q = ",hex(q)
-        print "aj", a[j]
-        print "b0", b[0]
-        print "d0", d[0]
+        print "aj", hex(a[j])
+        print "aj*bo+d=", hex((a[j]*b[0] + d[0]) & MASK)
+        print "aj*bo+d-e=", hex((a[j]*b[0] + d[0] - e[0]) & MASK)
+        print "b0", hex(b[0])
+        print "e0", hex(e[0])
         t0 = a[j] * b[0] + d[0]
         t0 = t0>>64
         print "t0 =", hex(t0)

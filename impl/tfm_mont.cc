@@ -559,7 +559,7 @@ extern "C" void c_debug_print(char label,fp_int *a,int isbig){
   fp_int temp;
   if(isbig){
     memcpy(temp.dp,a,16*sizeof(fp_digit));
-    temp.used = 16;
+    temp.used = 17;
     printf("%c =",label);
     fp_print(&temp);
   } else {
