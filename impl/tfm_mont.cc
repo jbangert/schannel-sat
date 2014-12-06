@@ -549,28 +549,25 @@ int fp_print(fp_int *test){
         printf("%s\n",buf);
         return 0;
 }
-/*
-void fp_mulmont2(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
-  int i =0;
-  fp_int d,e;
-  fp_digit *adp,*bdp,q;
-  memset(&d,0,sizeof d);
-  memset(&e,0,sizeof e);
-  mp = -mp;
-  const int pa = 16;
-  adp = a->dp;
-  for(i=0;i<pa;i++){
-    q = mp * b->dp[0] * a->dp[j] + mp*(d.dp[0] - e.dp[0]);
-    
-  }
-} */
 #ifndef NDEBUG
 #define DBG(x) x;
 #define DBG(X) ;
 #else
 #define DBG(x) ;
 #endif
-void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
+extern "C" void c_debug_print(char label,fp_int *a,int isbig){
+  fp_int temp;
+  if(isbig){
+    memcpy(temp.dp,a,16*sizeof(fp_digit));
+    temp.used = 16;
+    printf("%c =",label);
+    fp_print(&temp);
+  } else {
+    printf("%c = %lX\n",label,(fp_digit) a);
+  }
+}
+
+void fp_mulmont2(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   fp_int real;
   fp_int temp,d,e;
   fp_digit q;
@@ -617,6 +614,35 @@ void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
     //printf("d ="); fp_print(&d);
     //printf("e ="); fp_print(&e);
   }
+  {
+    fp_notless_u(&e,&d,16);
+    s_fp_sub_fixed2<16>(&d,&e,c);
+    s_fp_sub_fixed2<16>(m, &e,&temp);
+     s_fp_add_fixed<16>(&temp, &d,&real);
+    fp_notlessmove_impl(c,&real,16);
+  }
+   
+  //  printf("real=");fp_print(&real);
+  //  printf("got =");fp_print(c);
+  
+}
+extern "C" void mulmont_asm(fp_digit *a, fp_digit *b, fp_digit *m, fp_digit mp, fp_digit *d, fp_digit *e);
+void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
+  fp_int real;
+  fp_int temp,d,e;
+  fp_digit q;
+  int i,j;
+
+  memset(&d,0,sizeof d);
+  memset(&e,0,sizeof e);
+  mp = -mp;
+  
+  DBG(printf("a=0x"); fp_print(a));
+  DBG( printf("b=0x"); fp_print(b));
+  // printf("m=0x"); fp_print(m);
+  //printf("multiply_out=0x"); fp_print(&temp);
+  //   printf("mp=0x%lX\n",mp);
+  mulmont_asm(a->dp,b->dp,m->dp,mp, d.dp,e.dp);
   {
     fp_notless_u(&e,&d,16);
     s_fp_sub_fixed2<16>(&d,&e,c);
