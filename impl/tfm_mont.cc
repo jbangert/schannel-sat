@@ -542,17 +542,22 @@ static int fp_notless_setlsb(fp_int *a, fp_int *b, fp_int *x){
       : );
 }
 
-int fp_print(fp_int *test){
+inline int fp_print(fp_int *test){
         char buf[2048];
+        #ifndef NDEBUG
         //test->used = 32;
         fp_toradix(test,buf,16);
         printf("%s\n",buf);
+        #else
+        printf("fp_print disabled in debug\n");
+        #endif
         return 0;
 }
 #ifndef NDEBUG
 #define DBG(x) x;
 #define DBG(X) ;
 #else
+
 #define DBG(x) ;
 #endif
 extern "C" void c_debug_print(char label,fp_int *a,int isbig){

@@ -8,14 +8,14 @@ all: $(BINARIES)
 
 mulmont.o: mulmont.S
 functionality_test: $(ACCESSORY) functionality_test.cc mulmont.o -lcrypto
-mult_driver: mult_driver.cc
-mont_driver: mont_driver.cc 
-sqr_driver: sqr_driver.cc   
-div_driver: div_driver.cc 
-div_test: div_test.cc   
-exp_driver: exp_driver.cc 
-rsa_driver: rsa_driver.cc  
-sub_test: sub_test.c  
+mult_driver: mult_driver.cc mulmont.o 
+mont_driver: mont_driver.cc mulmont.o 
+sqr_driver: sqr_driver.cc   mulmont.o 
+div_driver: div_driver.cc  mulmont.o 
+div_test: div_test.cc   mulmont.o 
+exp_driver: exp_driver.cc mulmont.o 
+rsa_driver: rsa_driver.cc  mulmont.o 
+sub_test: sub_test.c  mulmont.o 
 rsa.o: rsa.cc
 mult_bench: mult_bench.o
 mult_bench.o: mul.S

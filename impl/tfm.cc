@@ -577,10 +577,12 @@ void fp_montgomery_calc_normalization(fp_int *a, fp_int *b)
   }
 }
 int fp_print(fp_int *test){
+  #ifndef NDEBUG
         char buf[1024];
         //        test->used = 32;
         fp_toradix(test,buf,10);
         printf("%s\n",buf);
+#endif NDEBUG
         return 0;
 }
 

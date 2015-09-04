@@ -64,20 +64,23 @@ mulmod_outer:
   ## Read d[0] into a register
   mov a_j, %rax 
   mulq (b_ptr) #rax = a_j*b_0
+  mov (d_ptr), q                # q=d_0
   mov %rax, scr_2                 
-  mov %rdx, t0                   # t0:scr_2 = a_j * b_0 
-  add (d_ptr), %rax              # rax = a_j * b_0 + d_0
-  sub (e_ptr), %rax               # rax = a_j * b_0 + d_0 - e_0
-  debug_print_number 0,'p', %rax
+  mov %rdx, t0                   # t0:scr_2 = a_j * b_0
+  addq q, scr_2                 
 
-  mulq mp
-  mov %rax, q
+  adc $0, t0                   # t0:scr_2 = (fp_word)a->dp[j]*(fp_word) b->dp[0] + (fp_word)d.dp[0]
+
+  addq %rax, q
+  sub (e_ptr), q           # q = a_j * b_0 + d_0 - e_0
+  debug_print_number 0,'p', q
+  imul mp, q
+  mov q, %rax
+
+
   ##    q = mp * ( b->dp[0] * a->dp[j] + d.dp[0] - e.dp[0])#
   debug_print_number 0,'q', q
   mulq (m_ptr)   ## rax= q *m[0]
-  addq (d_ptr), scr_2                 
-
-  adc $0, t0                   # t0:scr_2 = (fp_word)a->dp[j]*(fp_word) b->dp[0] + (fp_word)d.dp[0]
   debug_print_number 0,'t', t0
   addq (e_ptr), %rax
   mov %rdx, t1
