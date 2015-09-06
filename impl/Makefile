@@ -1,4 +1,4 @@
-CXXFLAGS= -I. -ggdb3  -Wno-write-strings  -O3  -DNDEBUG
+CXXFLAGS= -I. -ggdb3  -Wno-write-strings  -O0  -DNDEBUG
 CFLAGS=$(CXXFLAGS)
 ASFLAGS=$(CFLAGS)
 TFMDIR=../tomsfastmath-0.12/src

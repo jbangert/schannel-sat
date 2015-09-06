@@ -1,6 +1,24 @@
 
 
 #include "rsa.cc"
+void expect_value(const char *name, fp_int *actual, fp_int *expected){
+   if (fp_cmp(actual, expected)) {
+      char buf[1024];
+      printf("%s not equal\n", name);
+      fp_toradix(expected, buf, 16);
+      printf("expected == 0x%s\n", buf);
+      fp_toradix(actual, buf, 16);
+      printf("actual   == 0x%s\n\n", buf);
+   }
+}
+int mul_test(void) {
+  fp_int a,b,c,expected;
+   fp_read_radix(&a,"ce032e860a9809a5ec31e4b0fd4b546f8c40043e3d2ec3d8f49d8f2f3dd19e887094ee1af75caa1c2e6cd9ec78bf1dfd6280002ac8c30ecd72da2e4c59a28a9248048aaae2a8fa627f71bece979cebf9f8eee2bd594d4a4f2e791647573c7ec1fcbd320d3825be3fa8a17c97086fdae56f7086ce512b81cc2fe44161270ec5e9" , 16);
+   fp_read_radix(&b, "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd", 16);
+   fp_read_radix(&expected, "2ea46675446351918bd318b6a31876de5caa6538563c0a5b56df91f822df2b2f3d9bffa488d77c5b7527e1231bccd7ebd08ddd4f9732a21c32a17271ac5a6b48bed12903b33ec7a28506a4f150fbe3c3078661cd134d32949117f1b9b27152edc3f59f9ab5bdf3c9c61fb0c2afea142a98f2d15653722305496ac5d9ad86199f33806f18503af7da12f7750dd2e19feb32035525faef9cd16d5d3b4e99f96c02d83dc17fd73aeff0506dea1527187cf4c7286934c4ad270d3281cfa3018605a14f2c4a0983afd1b3ded3448564d3ff61fbbe282e690e3b04c8359124c42cae768390f74f8afd2299a5e1836e19b7c81a41f520b9a5f0f67588bde828b3dc0305", 16);
+   fp_mul_comba_16(&a,&b,&c);
+   expect_value("16 byte product", &c, &expected);
+}
 int exp_test(void) {
   fp_int n,e,m,c,d,e_m;
   fp_int mont;
@@ -11,16 +29,12 @@ int exp_test(void) {
    fp_read_radix(&m, "39f5a911250f45b99390e2df322b33c729099ab52b5879d06b00818cce57c649a66ed7eb6d8ae214d11caf9c81e83a7368cf0edb2b71dad791f13fecf546123b40377851e67835ade1d6be57f4de18a62db4cdb1880f4ab2e6a29acfd85ca22a13dc1f6fee2621ef0fc8689cd738e6f065c033ec7c148d8d348688af83d6f6bd", 16);
    fp_read_radix(&c, "9ff70ea6968a04530e6b06bf01aa937209cc8450e76ac19477743de996ba3fb445923c947f8d0add8c57efa51d15485309918459da6c1e5a97f215193b797dce98db51bdb4639c2ecfa90ebb051e3a2daeffd27a7d6e62043703a7b15e0ada5170427b63099cd01ef52cd92d8723e5774bea32716aaa7f5adbae817fb12a5b50", 16);
 
+   
    fp_montgomery_calc_normalization(&mont,&n);
    /* test it */
    table_sc_exp<16>(&m, &e, &n,&mont, &e_m);
-   if (fp_cmp(&e_m, &c)) {
-      char buf[1024];
-      printf("Encrypted text not equal\n");
-      fp_toradix(&e_m, buf, 16);
-      printf("e_m == %s\n", buf);
-      return 0;
-   }
+   expect_value("encrypted text", &e_m, &c);
+
    printf("CLOCKS_PER_SEC = %llu\n", (unsigned long long)CLOCKS_PER_SEC);
    t1 = clock();
    for (x = 0; x < 100; x++) {
@@ -42,13 +56,7 @@ int exp_test(void) {
    
    /* test it */
    table_sc_exp<16>(&c, &d, &n,&mont,  &e_m);
-   if (fp_cmp(&e_m, &m)) {
-      char buf[1024];
-      printf("Decrypted text not equal\n");
-      fp_toradix(&e_m, buf, 16);
-      printf("e_m == %s\n", buf);
-      return 0;
-   }
+   expect_value("decrypted text", &e_m, &m);
 
 }
 int crt_test(void ){
@@ -112,7 +120,9 @@ int modmul_test(){
 
 }
 int main(void){
-  exp_test();
-  crt_test();
+  mul_test();
   modmul_test();
+  exp_test();
+  // crt_test();
+
 }
