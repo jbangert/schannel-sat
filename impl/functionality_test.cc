@@ -95,7 +95,7 @@ int crt_test(void ){
         }
 
         clock_t t1;
-        const int count = 5000;
+        const int count = 200;
         t1 = clock();
         for (x = 0; x < count; x++) {
                 rsa_crt(&c,&p,&mont_p,&q,&mont_q,&d_p,&d_q,&q_inv,&e_m);
@@ -172,6 +172,6 @@ int main(void){
   mul_test();
   modmul_test();
   exp_test();
-  // crt_test();
+  crt_test();
 
 }

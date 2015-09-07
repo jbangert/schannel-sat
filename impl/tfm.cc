@@ -7,7 +7,6 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include <tfm.h>
 /* TomsFastMath, a fast ISO C bignum library.
  * 
  * This project is meant to fill in where LibTomMath
@@ -17,7 +16,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include <tfm.h> 
+#include "tfm.h"
 template <int used>
 void s_fp_add_fixed(fp_int *a, fp_int *b, fp_int *c){
   int      x;

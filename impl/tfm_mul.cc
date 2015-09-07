@@ -12,7 +12,7 @@
 
 */
 
-#include <tfm.h>
+#include "tfm.h"
 #define TFM_DEFINES
 #if defined(TFM_PRESCOTT) && defined(TFM_SSE2)
    #undef TFM_SSE2
