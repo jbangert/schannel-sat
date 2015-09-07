@@ -1,4 +1,4 @@
-CXXFLAGS= -I. -ggdb3  -Wno-write-strings  -O0  -DNDEBUG
+CXXFLAGS= -I. -ggdb3  -Wno-write-strings  -O0 #  -DNDEBUG
 CFLAGS=$(CXXFLAGS)
 ASFLAGS=$(CFLAGS)
 TFMDIR=../tomsfastmath-0.12/src
@@ -7,7 +7,8 @@ ACCESSORY= $(TFMDIR)/../libtfm.a #$(TFMDIR)/bin/*.c $(TFMDIR)/bit/*.c $(TFMDIR)/
 all: $(BINARIES)
 
 mulmont.o: mulmont.S
-functionality_test: $(ACCESSORY) functionality_test.cc mulmont.o -lcrypto
+functionality_test: $(ACCESSORY)  *.cc
+	$(CXX) $(CXXFLAGS) -o $@ functionality_test.cc mulmont.o -lcrypto $(ACCESSORY)
 mult_driver: mult_driver.cc mulmont.o 
 mont_driver: mont_driver.cc mulmont.o 
 sqr_driver: sqr_driver.cc   mulmont.o 

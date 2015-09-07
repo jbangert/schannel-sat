@@ -1,5 +1,4 @@
 
-
 #include "rsa.cc"
 void expect_value(const char *name, fp_int *actual, fp_int *expected){
    if (fp_cmp(actual, expected)) {
@@ -106,7 +105,21 @@ int crt_test(void ){
         
         printf("CRT decrypt/sec              %10.5g\n", (double)CLOCKS_PER_SEC / ((double)t1 /(double)count) );
 }
+void modmul_testcase(fp_int *a, fp_int *b,fp_int *mod){
+  fp_int result, result2,result_ref;
+  fp_digit mont, mont_ref;
+  fp_montgomery_setup(mod, &mont_ref);
+  fixed_mont_setup(mod,&mont);
+  assert(mont == mont_ref);
 
+  fp_mul(a,b,&result_ref);
+  fp_montgomery_reduce(&result_ref, mod, mont);
+  fp_mulmont2(a,b,mod,&result2, mont);
+  fp_mulmont(a,b, mod, &result, mont);
+  expect_value("mulmont asm correct", &result, &result2);
+
+  expect_value("mulmont_testcase" , &result2, &result_ref);
+}
 int modmul_test(){
   fp_int a,b,c,m,out;
   fp_digit mont;
@@ -116,6 +129,10 @@ int modmul_test(){
    fp_read_radix(&b,"6B245AA7A7688FF0AC45EF74424BFB58728E864567D047108A250771C174508DCEA0120EB40EF7C9F46127BAFAFFE6DE74E4B40481F15357DBB94DFE5A68389BA86F06C0D3AC9DE42AA205E9AA259E11A6157F49F1CFD62299CF589BE1E6B582044FBB04AAA69C082E20D5EB0B3D8D1CF2E3B6E6D8AEE8D8C710E5DC46D734D9",16);
    fp_read_radix(&m,"F6DCB8A197DD9E96880F824A9A0839F8AC628460D9CDC2F49600A67D97784A76E3636AF460B4FA4491AAF737EDD88C1C811D09B93106B23F82215A1368D142F00B9BB20DB46848902E3FD64F5C0BC0B052D3FF8C3CF18B66E7B4036B0D94B167A72EBDC50248E8F43B768CD50BE7B88F449B3DDF6513235CC6D8244DFE788215", 16);
    fp_read_radix(&out, "1a55daaf0586f5be53a83873c0a45143ad347f36af08e4b60ad23f5aea561770e484da06cb5be58847a234a42a336b6f398e64899278b7185b57a28688d5c672d9616ecf83e4aaf8b12f60c9ad2fb33f8af9e21bd0348f1028729df4fb7b1e55f76e7c9358e38aa9299cf3c67d16e85a2bd808676cd107e41b7de2c4eeb88955", 16);
+
+
+   //   modmul_testcase(a,b, m);
+   modmul_testcase(&a,&a,&m);
    fixed_mont_setup(&m,&mont);
    
    fp_mul(&a,&b,&out);
@@ -124,6 +141,8 @@ int modmul_test(){
    
    fp_mulmont(&a,&b,&m, &a, mont);
    //   fp_montreduce_fixed(&c,&m,mont);
+
+
 
    //fp_mulmod(&a,&b,&m, &c);
    expect_value("mulmod_inplace ", &a, &out);

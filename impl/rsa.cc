@@ -83,6 +83,8 @@ void fp_copy_fixed(fp_int *a, fp_int *b)
   a->used = used;
   a->sign = b->sign;
 }
+
+void modmul_testcase(fp_int *a, fp_int *b,fp_int *mod);
 template <int used>
 int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
         fp_digit table[FP_SIZE * (1<<TABLE)] __attribute__ ((aligned (128)));   
@@ -132,9 +134,10 @@ int table_sc_exp(fp_int *a, fp_int *b,fp_int *m, fp_int *m_mont, fp_int *res){
             y = (fp_digit) (buf >> (DIGIT_BIT - TABLE)) & ((1<<TABLE) -  1);
             buf <<= (fp_digit)TABLE;
             for(i=0;i<TABLE;i++){
+              //              modmul_testcase(res,res, m);
               fp_mulmont(res,res,m, res,mp);
-              //             fp_sqr_comba_small16(res,res);    
-              //             fp_montgomery_reduce(res,m, mp);
+              //fp_sqr_comba_small16(res,res);    
+              //fp_montgomery_reduce(res,m, mp);
                       assert(res->used == 16);
             }
             gather<used>(table,y,&temp);

@@ -572,7 +572,7 @@ extern "C" void c_debug_print(char label,fp_int *a,int isbig){
   }
 }
 
-void fp_mulmont2(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
+void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   fp_int real;
   fp_int temp,d,e;
   fp_digit q;
@@ -632,7 +632,7 @@ void fp_mulmont2(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   
 }
 extern "C" void mulmont_asm(fp_digit *a, fp_digit *b, fp_digit *m, fp_digit mp, fp_digit *d, fp_digit *e);
-void fp_mulmont(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
+void fp_mulmont2(fp_int *a, fp_int *b, fp_int *m,fp_int *c, fp_digit mp){
   fp_int real;
   fp_int temp,d,e;
   fp_digit q;
